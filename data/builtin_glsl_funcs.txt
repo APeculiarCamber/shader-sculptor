@@ -1,0 +1,261 @@
+out genType res = ( in genType a + in genType b ); add_(+)
+out matn res = ( in matn a + in matn b ); mat_add_(+)
+out matn res = ( in matn a - in matn b ); mat_subtract_(-)
+out genType res = ( in genType a / in genType b ); div_(/)
+out genType res = ( in genType a - in genType b ); subtract_(-)
+out genType res = ( in genType a * in genType b ); multiply_(*)
+out genType res = ( in genType a * in float b ); multiply_scalar_(*)
+out vecn res = ( in matn a * in vecn b ); mat_vec_multipy_(*)
+out matn res = ( in matn a * in matn b ); mat_multiply_(*)
+out vec3 res = ( in vec4 a .xyz ); vec4_to_vec3
+out vec4 res = vec4( in vec3 a , 1 ); vec3_to_vec4
+
+out genType res = mix( in genType x , in genType y , in genType a ); mix_gen
+out genType res = mix( in genType x , in genType y , in float a ); mix
+out genDType res = mix( in genDType x , in genDType y , in genDType a ); mix_gen_D
+out genDType res = mix( in genDType x , in genDType y , in double a ); mix_D
+out genDType res = mix( in genDType x , in genDType y , in genBType a ); mix_D_bool
+out genType res = mix( in genType x , in genType y , in genBType a ); mix_bool
+out bvecn gt = greaterThan ( in vecn x , in vecn y ); greaterThan_(>)
+out GenType res = ( in bool val ? in GenType True : in GenType False ); if_(?) 
+
+out genType step = smoothstep( in genType edge0 , in genType edge1 , in genType x ); smoothstep_gen
+out genType step = smoothstep( in float edge0 , in float edge1 , in genType x ); smoothstep
+out genDType step = smoothstep( in genDType edge0 , in genDType edge1 , in genDType x ); smoothstep_gen_D
+out genDType step = smoothstep( in double edge0 , in double edge1 , in genDType x ); smoothstep_D
+out genType val = step( in genType edge , in genType x ); step_gen
+out genType val = step(	in float edge , in genType x ); step
+genDType val = step( in genDType edge , in genDType x ); step_gen_D
+genDType val = step( in double edge, in genDType x ); step_gen_D
+
+out genType sqrt = sqrt( in genType x ); sqrt
+out genDType sqrt = sqrt( in genDType x ); sqrt_D
+
+out genType res = ceil( in genType x ); ceil
+out genDType res = ceil( in genDType x ); ceil_D
+
+out genType t = trunc ( in genType x ); trunc
+out genDType t = trunc ( in genDType x ); trunc_D
+
+out genType res = round ( in genType x ); round
+out genDType res = round ( in genDType x ); round_D
+out genType res = roundEven ( in genType x ); roundEven
+out genDType res = roundEven ( in genDType x ); roundEven_D
+
+out genType max = max ( in genType x , in genType y ); max_gen
+out genType max = max ( in genType x , in float y ); max_F
+out genDType max = max ( in genDType x , in genDType y ); max_gen_D
+out genDType max = max ( in genDType x , in double y ); max_D
+out genIType max = max ( in genIType x , in genIType y ); max_gen_I
+out genIType max = max ( in genIType x , in int y ); max_I
+
+out genType min = min ( in genType x , in genType y ); min_gen
+out genType min = min ( in genType x , in float y ); min_F
+out genDType min = min ( in genDType x , in genDType y ); min_gen_D
+out genDType min = min ( in genDType x , in double y ); min_D
+out genIType min = min ( in genIType x , in genIType y ); min_gen_I
+out genIType min = min ( in genIType x , in int y ); min_I
+
+out genType rem = mod ( in genType x , in float y ); mod_F
+out genType rem = mod ( in genType x , in genType y ); mod_gen
+out genDType rem = mod ( in genDType x , in double y ); mod_D
+out genDType rem = mod ( in genDType x , in genDType y ); mod_gen_D
+
+out vec4 tex = texture ( in sampler2D sampler , in vec2 P , in float bias ); texture_bias
+out vec4 tex = texture ( in sampler3D sampler , in vec3 P , in float bias ); texture_3D_bias
+out vec4 tex = texture ( in samplerCube sampler , in vec3 P , in float bias ); texture_cube_bias
+out vec4 tex = texture ( in sampler2D sampler , in vec2 P ); texture
+out vec4 tex = texture ( in sampler3D sampler , in vec3 P ); texture_3D
+out vec4 tex = texture ( in samplerCube sampler , in vec3 P ); texture_cube
+
+out genType res = acos ( in genType x ); acos
+out genType res = acosh ( in genType x ); acosh
+out genType res = asin ( in genType x ); asin
+out genType res = asinh ( in genType x ); asinh
+out genType res = atan ( in genType x ); atan
+out genType res = atanh ( in genType x ); atanh
+
+out genType res = log ( in genType x ); log_nat
+out genType res = log2 ( in genType x ); log2
+
+out genType res = cos ( in genType x ); cos
+out genType res = cosh ( in genType x ); cosh
+out genType res = sin ( in genType x ); sin
+out genType res = sinh ( in genType x ); sinh
+out genType res = tan ( in genType angle ); tan
+out genType res = tanh ( in genType angle ); tanh
+
+out genType sign = sign ( in genType x ); sign
+out genIType sign = sign ( in genIType x ); sign_I
+out genDType sign = sign ( in genDType x ); sign_D
+
+
+out genType norm = normalize ( in genType v ); normalize
+out genDType norm = normalize ( in genDType v ); normalize_D
+
+out float n = noise1 ( in genType x ); noise1
+out vec2 n = noise2 ( in genType x ); noise2
+out vec3 n = noise3 ( in genType x ); noise3
+out vec4 n = noise4 ( in genType x ); noise4
+
+out genType res = clamp ( in genType x , in genType minVal , in genType maxVal ); clamp_FGen
+out genType res = clamp ( in genType x , in float minVal , in float maxVal ); clamp_F
+out genDType res = clamp ( in genDType x , in genDType minVal , in genDType maxVal ); clamp_DGen
+out genDType res = clamp ( in genDType x , in double minVal , in double maxVal ); clamp_D
+out genIType res = clamp ( in genIType x , in genIType minVal , in genIType maxVal ); clamp_IGen
+out genIType res = clamp ( in genIType x , in int minVal , in int maxVal ); clamp_I
+
+out float dist = distance ( in genType p0 , in genType p1 ); distance
+out double dist = distance ( in genDType p0 , in genDType p1 ); distance_D
+out float len = length ( in genType x ); length
+out double len = length ( in genDType x ); length_D
+
+out genType inv_sqrt = inversesqrt ( in genType x ); inversesqrt
+out genDType inv_sqrt = inversesqrt ( in genDType x ); inversesqrt_D
+
+out vec3 res = cross ( in vec3 x , in vec3 y ); cross
+out dvec3 res = cross ( in dvec3 x, in dvec3 y); cross_D
+
+out genType ref = reflect ( in genType I , in genType N ); reflect
+out genDType ref = reflect ( in genDType I , in genDType N ); reflect_D
+out genType ref = refract ( in genType I , in genType N , in float eta ); refract_eta
+out genDType ref = refract ( in genDType I , in genDType N , in float eta ); refract_D_eta
+
+out float dot = dot ( in genType x , in genType y ); dot
+out double dot = dot ( in genDType x , in genDType y ); dot_D
+
+out genType forw = faceforward ( in genType N , in genType I , in genType Nref ); faceforward
+out genDType forw = faceforward ( in genDType N , in genDType I , in genDType Nref ); faceforward_D
+
+out genType floor = floor ( in genType x ); floor
+out genDType floor = floor ( in genDType x ); floor_D
+
+out genType res = fma ( in genType a , in genType b , in genType c ); MAD
+out genDType res = fma ( in genDType a , in genDType b , in genDType c ); MAD_D
+out genType frac = fract ( in genType x ); fract
+out genDType frac = fract ( in genDType x ); fract_D
+
+out genType exp = ldexp ( in genType x , in genIType exp ); ldexp_make
+out genDType exp = ldexp ( in genDType x , in genIType exp ); ldexp_make_D
+out genType pow = pow ( in genType x , in genType y ); pow
+
+out genType res = abs ( in genType x ); abs
+out genIType res = abs ( in genIType x ); absI
+out genDType res = abs ( in genDType x ); absD
+
+out genType res = acos ( in genType x ); acos
+out genType res = acosh ( in genType x ); acosh
+out genType res = asin ( in genType x ); asin
+out genType res = asinh ( in genType x ); asinh
+out genType res = atan ( in genType x ); atan
+out genType res = atanh ( in genType x ); atanh
+
+out genType res = log ( in genType x ); log_nat
+out genType res = log2 ( in genType x ); log2
+
+out genType res = cos ( in genType x ); cos
+out genType res = cosh ( in genType x ); cosh
+out genType res = sin ( in genType x ); sin
+out genType res = sinh ( in genType x ); sinh
+out genType res = tan ( in genType angle ); tan
+out genType res = tanh ( in genType angle ); tanh
+
+out bool res = all ( in bvecn x ); all
+out bool res = any ( in bvecn x ); any
+out bvecn eq = equal ( in vecn x , in vecn y ); equal_(==)
+out bvecn eq = equal ( in ivecn x , in ivecn y ); equal_I_(==)
+out bvecn eq = equal ( in uvecn x , in uvecn y ); equal_U_(==)
+
+out bvecn gt = greaterThan ( in vecn x , in vecn y ); greaterThan_(>)
+out bvecn gt = greaterThan ( in ivecn x , in ivecn y ); greaterThan_I_(>)
+out bvecn gt = greaterThan ( in uvecn x , in uvecn y ); greaterThan_U_(>)
+out bvecn gte = greaterThanEqual ( in vecn x , in vecn y ); greaterThanEqual_(>=)
+out bvecn gte = greaterThanEqual ( in ivecn x , in ivecn y ); greaterThanEqual_I_(>=)
+out bvecn gte = greaterThanEqual ( in uvecn x , in uvecn y ); greaterThanEqual_U_(>=)
+
+out bvecn lt = lessThan ( in vecn x , in vecn y ); lessThan_(<)
+out bvecn lt = lessThan ( in ivecn x , in ivecn y ); lessThan_I_(<)
+out bvecn lt = lessThan ( in uvecn x , in uvecn y ); lessThan_U_(<)
+out bvecn lte = lessThanEqual ( in vecn x , in vecn y ); lessThanEqual_(<=)
+out bvecn lte = lessThanEqual ( in ivecn x , in ivecn y ); lessThanEqual_I_(<=)
+out bvecn lte = lessThanEqual ( in uvecn x , in uvecn y ); lessThanEqual_U_(<=)
+out bvecn ne = notEqual ( in vecn x , in vecn y ); notEqual_(!=)
+out bvecn ne = notEqual ( in ivecn x , in ivecn y ); notEqual_I_(!=)
+out bvecn ne = notEqual ( in uvecn x , in uvecn y ); notEqual_U_(!=)
+
+out bvecn n = not ( in bvecn x ) not_bool
+
+out genBType inf = isinf ( in genType x ); isinf
+out genBType inf = isinf ( in genDType x ); isinf_D
+out genBType inf = isnan ( in genType x ); isnan
+out genBType inf = isnan ( in genDType x ); isnan_D
+
+out genType exp = exp ( in genType x ); exp_e
+out genType exp = exp2 ( in genType x ); exp_2
+
+out genIType bits = bitCount ( in genIType value ); bitCount
+out genIType bits = bitCount ( in genUType value ); bitCount_U
+
+out genIType bits = floatBitsToInt ( in genType x ); floatBitsToInt
+out genType fl = intBitsToFloat ( in genIType x ); intBitsToFloat
+
+out genType degrees = degrees ( in genType radians ); rad_to_degrees
+out genType radians = radians ( in genType degrees ); degree_to_rads
+
+out float det = determinant ( in matn m ); determinant
+out double det = determinant ( in dmatn m ); determinant
+
+out matn inv = inverse ( in matn m ); inverse
+out dmatn inv = inverse ( in dmatn m ); inverse_D
+
+out matn t = transpose ( in matn m ); transpose
+out dmatn t = transpose ( in dmatn m ); transpose_D
+
+out matn comp_mat = matrixCompMult ( in matn x , in matn y ); matrixComponentMult
+out dmatn comp_mat = matrixCompMult ( in dmatn x , in dmatn y ); matrixComponentMult_D
+
+out matn op = outerProduct ( in vecn c , in vecn r ); outerProduct
+out dmatn op = outerProduct ( in dvecn c , in dvecn r ); outerProduct_D
+
+
+out genType der = dFdx ( in genType p ); derivative_dx
+out genType der = dFdy ( in genType p ); derivative_dy
+
+out genType width = fwidth ( in genType p ); fwidth
+
+
+out vec4 texel = texelFetch ( in sampler2D sampler , in ivec2 P , in int lod ); texelFetch
+out vec4 texel = texelFetch ( in sampler3D sampler , in ivec3 P , in int lod ); texelFetch
+
+out vec4 tex = textureGrad ( in sampler2D sampler , in vec2 P , in vec2 dPdx , in vec2 dPdy ); textureGrad
+out vec4 tex = textureGrad ( in sampler3D sampler , in vec3 P , in vec3 dPdx , in vec3 dPdy ); textureGrad_3D
+out vec4 tex = textureGrad ( in samplerCube sampler , in vec2 P , in vec2 dPdx , in vec2 dPdy ); textureGrad_cube
+
+out vec4 tex = textureProj ( in sampler2D sampler , in vec3 P ); textureProj
+out vec4 tex = textureProj ( in sampler3D sampler , in vec4 P ); textureProj_3D
+out vec4 tex = textureProj ( in sampler2D sampler , in vec3 P, in float bias ); textureProj_bias
+out vec4 tex = textureProj ( in sampler3D sampler , in vec4 P, in float bias ); textureProj_3D_bias
+
+out ivec2 size = textureSize ( in sampler2D sampler , in int lod ); textureSize_2D
+out ivec3 size = textureSize ( in sampler3D sampler , in int lod ); textureSize_3D
+out ivec2 size = textureSize ( in samplerCube sampler , in int lod ); textureSize_Cube
+
+out vec2 res = vec2( in float x , in float y ); make_vec2_alt 
+out vec3 res = vec3( in float x , in float y , in float z ); make_vec3_alt 
+out vec4 res = vec4( in float x , in float y , in float z , in float w ); make_vec4_alt 
+
+out dvec2 res = dvec2( in double x , in double y ); make_dvec2_alt
+out dvec3 res = dvec3( in double x , in double y , in double z ); make_dvec3_alt
+out dvec4 res = dvec4( in double x , in double y , in double z , in double w ); make_dvec4_alt
+
+out ivec2 res = ivec2( in int x , in int y ); make_ivec2_alt
+out ivec3 res = ivec3( in int x , in int y , in int z ); make_ivec3_alt
+out ivec4 res = ivec4( in int x , in int y , in int z , in int w ); make_ivec4_alt
+
+out bvec2 res = bvec2( in bool x , in bool y ); make_bvec2_alt
+out bvec3 res = bvec3( in bool x , in bool y , in bool z ); make_bvec3_alt
+out bvec4 res = bvec4( in bool x , in bool y , in bool z , in bool w ); make_bvec4_alt
+
+out mat3 rot_mat = mat3( cos( in float a ), 0, sin( in float a ), 
+                         0 , 1 , 0, 
+                         -sin( in float a ), 0, cos( in float a )); make_y_axis_rotation
