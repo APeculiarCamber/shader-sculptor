@@ -1,6 +1,8 @@
 # shader-scupltor
 Shader graph system
 
+THIS IS A VSCODE PROJECT.
+
 Compile the project and run using compile_run_ss.bat .
 
 Run the project with .\shader_sculptor.exe .
