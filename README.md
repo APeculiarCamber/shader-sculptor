@@ -18,11 +18,11 @@ The slides for the presentation that accompanied this project can be found [here
 
 # Special Thanks to:
 
-## Professor Eric Ameres, mentor for project
+### Professor Eric Ameres, mentor for project
 
-## Omar Cornut, Lead for Dear IMGUI
+### Omar Cornut, Lead for Dear IMGUI
 
-## Joey de Vries, Author of LearnOpenGL
+### Joey de Vries, Author of LearnOpenGL
 
 
 
