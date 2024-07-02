@@ -11,7 +11,7 @@ The simple manual for use can be be found [here.](https://github.com/APeculiarCa
 
 # Presentation
 
-The slides for the presentation that accompanied this project can be found [here.](https://github.com/APeculiarCamber/shader-scupltor/blob/main/Shader%20Project%20Presentation-1.pdf))
+The slides for the presentation that accompanied this project can be found [here.](https://github.com/APeculiarCamber/shader-scupltor/blob/main/Shader%20Project%20Presentation-1.pdf)
 
 ### Example graph
 ![Example Brick Graph!](/present_images/brick_graph.png "Brick Graph")
