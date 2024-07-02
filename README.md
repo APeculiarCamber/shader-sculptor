@@ -1,5 +1,5 @@
 # Shader-Scupltor
-Shader graph system
+A visual node scripting tool for GLSL graphics shaders using [Dear ImGui](https://github.com/ocornut/imgui).
 
 # Project
 
