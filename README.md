@@ -1,3 +1,7 @@
+## TODO
+-- The manual needs to be remade.
+-- The code needs to be refactored for style AND structure.
+
 # Shader-Scupltor
 A visual node scripting tool for GLSL graphics shaders using [Dear ImGui](https://github.com/ocornut/imgui).
 
