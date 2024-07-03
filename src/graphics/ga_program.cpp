@@ -25,7 +25,6 @@ void ga_uniform::set(float scalar)
 }
 void ga_uniform::set(const ga_vec2f& vec)
 {
-	std::cout << "VEC2" << std::endl;
 	glUniform2fv(_location, 1, vec.axes);
 }
 void ga_uniform::set(const ga_vec3f& vec)

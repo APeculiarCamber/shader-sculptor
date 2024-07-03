@@ -32,40 +32,27 @@ ga_material::~ga_material()
 
 bool ga_material::init(std::string& source_vs, std::string& source_fs)
 {
-	bool succ = true;
-	// _vs = new ga_shader(source_vs.c_str(), GL_VERTEX_SHADER);
-	std::cout << "MatVS -- Trying to compile:\n" << source_vs << std::endl;
 	_vs = new ga_shader(source_vs.c_str(), GL_VERTEX_SHADER);
-	if (!_vs->compile())
-	{
-		std::cerr << "Failed to compile vertex shader:" << std::endl << _vs->get_compile_log() << std::endl;
-		succ = false;
+	if (not _vs->compile()) {
+        assert("Failed to compile vertex shader");
 	}
 
-	// _fs = new ga_shader(source_fs.c_str(), GL_FRAGMENT_SHADER);
-	std::cout << "MatFS -- Trying to compile:\n" << source_fs << std::endl;
 	_fs = new ga_shader(source_fs.c_str(), GL_FRAGMENT_SHADER);
-	if (!_fs->compile())
-	{
-		std::cerr << "Failed to compile fragment shader:\n\t" << std::endl << _fs->get_compile_log() << std::endl;
-		succ = false;
+	if (not _fs->compile()) {
+        assert("Failed to compile fragment shader");
 	}
 
 	_program = new ga_program();
 	_program->attach(*_vs);
 	_program->attach(*_fs);
-	if (!_program->link())
-	{
-		std::cerr << "Failed to link shader program:\n\t" << std::endl << _program->get_link_log() << std::endl;
-		succ = false;
+	if (not _program->link()) {
+        assert("Failed to link shader program");
 	}
-	if (succ) std::cout << "SUCCEEDED SHADER COMPILE" << std::endl;
 
 	return true;
 }
 
 unsigned int ga_material::set_uniforms_by_type(Parameter_Data* p_data, unsigned int texture_id) {
-	std::cout << "SET UNIFORMS" << std::endl;
 	if (p_data->_type == SS_Texture2D) {
 		_program->get_uniform(p_data->_param_name).set((unsigned int*)p_data->data_container, texture_id);
 		return texture_id + 1;
@@ -141,8 +128,8 @@ void ga_pbr_material::bind(const ga_mat4f& view, const ga_mat4f& proj, const ga_
 	// TODO : maybe inverse
 	_program->get_uniform("u_eyePos").set(view.inverse().get_translation());
 
-        auto end = std::chrono::system_clock::now();
-		float f = std::chrono::duration_cast<std::chrono::milliseconds>(end - k_ga_material_clock_start).count();
+    auto end = std::chrono::system_clock::now();
+    float f = (float)std::chrono::duration_cast<std::chrono::milliseconds>(end - k_ga_material_clock_start).count();
 
 	float seconds = f / 1000.0f;
 
@@ -164,51 +151,4 @@ void ga_pbr_material::bind(const ga_mat4f& view, const ga_mat4f& proj, const ga_
 	glDisable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
-}
-
-
-void ga_material::update_vertex_shader(std::string& vert_shader_code) {
-	bool succ = true;
-	// _vs = new ga_shader(source_vs.c_str(), GL_VERTEX_SHADER);
-	std::cout << "VertShader -- Trying to compile:\n" << vert_shader_code << std::endl;
-	if (_vs) { delete _vs; }
-	_vs = new ga_shader(vert_shader_code.c_str(), GL_VERTEX_SHADER);
-	if (!_vs->compile()) {
-		std::cerr << "Failed to compile vertex shader:" << std::endl << _vs->get_compile_log() << std::endl;
-		succ = false;
-	}
-
-	if (_program) { delete _program; } // relink the program
-	_program = new ga_program();
-	_program->attach(*_vs);
-	_program->attach(*_fs);
-	if (!_program->link()) {
-		std::cerr << "Failed to link shader program:\n\t" << std::endl << _program->get_link_log() << std::endl;
-		succ = false;
-	}
-	if (succ) std::cout << "SUCCEEDED SHADER COMPILE" << std::endl;
-
-}
-
-void ga_material::update_frag_shader(std::string& frag_code) {
-	bool succ = true;
-	// _vs = new ga_shader(source_vs.c_str(), GL_VERTEX_SHADER);
-	std::cout << "FragShader -- Trying to compile:\n" << frag_code << std::endl;
-	if (_fs) { delete _fs; }
-	_fs = new ga_shader(frag_code.c_str(), GL_VERTEX_SHADER);
-	if (!_fs->compile()) {
-		std::cerr << "Failed to compile vertex shader:" << std::endl << _vs->get_compile_log() << std::endl;
-		succ = false;
-	}
-
-	if (_program) { delete _program; } // relink the program
-	_program = new ga_program();
-	_program->attach(*_vs);
-	_program->attach(*_fs);
-	if (!_program->link()) {
-		std::cerr << "Failed to link shader program:\n\t" << std::endl << _program->get_link_log() << std::endl;
-		succ = false;
-	}
-	if (succ) std::cout << "SUCCEEDED SHADER COMPILE" << std::endl;
-
 }

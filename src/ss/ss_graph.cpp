@@ -1,9 +1,8 @@
 #include "ss_graph.hpp"
-#include "../stb_image.h"
+#include "stb_image.h"
 #include <fstream>
 #include <algorithm>
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
 
 /**
  * @brief Construct a new ss graph::ss graph object
@@ -239,7 +238,7 @@ void SS_Graph::draw_image_loader() {
     }
     ImGui::EndChild();
 
-    ImGui::InputText("###Input Image", img_buf, 256);
+    ImGui::InputTextWithHint("###Input Image", "Image Filepath", img_buf, 256);
     ImGui::SameLine();
     if (ImGui::Button("Add Image")) {
         unsigned int tex = try_to_gen_texture(img_buf);
@@ -423,22 +422,30 @@ DELETE: DELETE HOVERED NODE OR PIN)");
 }
 
 bool SS_Graph::draw_saving_window() {
+    bool bReturn = true;
     ImGui::SetNextWindowFocus();
     ImGui::Begin("Save LOCATION");
-    ImGui::InputText("SAVE LOCATION", save_buf, 128);
-    ImGui::InputText("FRAG NAME", save_buf + 128, 64);
-    ImGui::InputText("VERT NAME", save_buf + 192, 64);
+    char* saveLocationStr = save_buf;
+    char* saveFragStr = save_buf + 128;
+    char* saveVertStr = save_buf + 192;
+    ImGui::InputText("SAVE LOCATION", saveLocationStr, 128);
+    ImGui::InputText("FRAG NAME", saveFragStr, 64);
+    ImGui::InputText("VERT NAME", saveVertStr, 64);
     if (ImGui::Button("SAVE GRAPH CODE")) {
-        std::ofstream frag_oss(std::string(save_buf) + "/" + std::string(save_buf + 128));
-        std::ofstream vert_oss(std::string(save_buf) + "/" + std::string(save_buf + 192));
-        frag_oss << _current_frag_code << std::endl;
-        vert_oss << _current_vert_code << std::endl;
-        return false;
+        std::ofstream frag_oss(std::string(save_buf) + "/" + std::string(saveFragStr));
+        std::ofstream vert_oss(std::string(save_buf) + "/" + std::string(saveVertStr));
+        if (frag_oss.good() and vert_oss.good()) {
+            frag_oss << _current_frag_code << std::endl;
+            vert_oss << _current_vert_code << std::endl;
+        } else {
+            std::cerr << "WARNING: Couldn't save to " << save_buf << ".\n\tThis directory might not exist." << std::endl;
+        }
+        bReturn = false;
     }
     if (ImGui::Button("CLOSE WITH SAVE"))
-        return false;
+        bReturn = false;
     ImGui::End();
-    return true;
+    return bReturn;
 }
 
 bool SS_Graph::draw_credits() {
@@ -813,27 +820,36 @@ void Parameter_Data::draw(SS_Graph* graph) {
         case SS_TextureCube:
         data_type = ImGuiDataType_S32; data_size = sizeof(int); break;
     }
+
+    std::vector<std::string> labels(4);
     switch (_gentype) {
         case SS_Scalar:
-            ImGui::InputScalar(("Scalar-In###" + param_name_str).c_str(), data_type, data_container); break;
+            labels[0] = (disable_gentype ? "Index-In###" : "Scalar-In###") + param_name_str;
+            ImGui::InputScalar(labels[0].c_str(), data_type, data_container); break;
         case SS_Vec2:
-            ImGui::InputScalarN(("Vec2-In###" + param_name_str).c_str(), data_type, data_container, 2); break;
+            labels[0] = ("Vec2-In###" + param_name_str);
+            ImGui::InputScalarN(labels[0].c_str(), data_type, data_container, 2); break;
         case SS_Vec3:
-            ImGui::InputScalarN(("Vec3-In###" + param_name_str).c_str(), data_type, data_container, 3); break;
+            labels[0] = ("Vec2-In###" + param_name_str);
+            ImGui::InputScalarN(labels[0].c_str(), data_type, data_container, 3); break;
         case SS_Vec4:
-            ImGui::InputScalarN(("Vec4-In###" + param_name_str).c_str(), data_type, data_container, 4); break;
+            labels[0] = ("Vec4-In###" + param_name_str);
+            ImGui::InputScalarN(labels[0].c_str(), data_type, data_container, 4); break;
         case SS_Mat2:
-            ImGui::InputScalarN(("Vec2-In###" + param_name_str + "111").c_str(), data_type, data_container, 2);
-            ImGui::InputScalarN(("Vec2-In###" + param_name_str + "222").c_str(), data_type, data_container + data_size * 2, 2); break;
+            labels = { ("Mat2-In###" + param_name_str + "111"), ("Mat2-In###" + param_name_str + "222") };
+            ImGui::InputScalarN(labels[0].c_str(), data_type, data_container, 2);
+            ImGui::InputScalarN(labels[1].c_str(), data_type, data_container + data_size * 2, 2); break;
         case SS_Mat3:
-            ImGui::InputScalarN(("Mat3-In###" + param_name_str + "111").c_str(), data_type, data_container, 3);
-            ImGui::InputScalarN(("Mat3-In###" + param_name_str + "222").c_str(), data_type, data_container + (data_size*3), 3);
-            ImGui::InputScalarN(("Mat3-In###" + param_name_str + "333").c_str(), data_type, data_container + (data_size*6), 3); break;
+            labels = { ("Mat3-In###" + param_name_str + "111"), ("Mat3-In###" + param_name_str + "222"), ("Mat3-In###" + param_name_str + "333") };
+            ImGui::InputScalarN(labels[0].c_str(), data_type, data_container, 3);
+            ImGui::InputScalarN(labels[1].c_str(), data_type, data_container + (data_size*3), 3);
+            ImGui::InputScalarN(labels[2].c_str(), data_type, data_container + (data_size*6), 3); break;
         case SS_Mat4:
-            ImGui::InputScalarN(("Mat4-In###" + param_name_str + "111").c_str(), data_type, data_container, 4);
-            ImGui::InputScalarN(("Mat4-In###" + param_name_str + "222").c_str(), data_type, data_container + (data_size*4), 4);
-            ImGui::InputScalarN(("Mat4-In###" + param_name_str + "333").c_str(), data_type, data_container + (data_size*8), 4);
-            ImGui::InputScalarN(("Mat4-In###" + param_name_str + "444").c_str(), data_type, data_container + (data_size*12), 4); break;
+            labels = { ("Mat4-In###" + param_name_str + "111"), ("Mat4-In###" + param_name_str + "222"), ("Mat4-In###" + param_name_str + "333"), ("Mat4-In###" + param_name_str + "444") };
+            ImGui::InputScalarN(labels[0].c_str(), data_type, data_container, 4);
+            ImGui::InputScalarN(labels[1].c_str(), data_type, data_container + (data_size*4), 4);
+            ImGui::InputScalarN(labels[2].c_str(), data_type, data_container + (data_size*8), 4);
+            ImGui::InputScalarN(labels[3].c_str(), data_type, data_container + (data_size*12), 4); break;
         case SS_MAT:
             break;
     }

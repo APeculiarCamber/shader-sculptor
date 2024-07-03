@@ -36,9 +36,7 @@ public:
 
 	virtual void bind(const ga_mat4f& view, const ga_mat4f& proj, const ga_mat4f& transform, std::vector<struct Parameter_Data*>& p_data);
 
-	virtual void update_vertex_shader(std::string& vert_shader_code);
-	virtual void update_frag_shader(std::string& frag_shader_code);
-	ga_shader* _vs;
+    ga_shader* _vs;
 	ga_shader* _fs;
 	ga_program* _program;
 	

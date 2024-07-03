@@ -24,9 +24,7 @@ ga_texture::~ga_texture()
 
 void ga_texture::load_from_data(uint32_t width, uint32_t height, uint32_t channels, void* data)
 {
-	std::cout << "THIS NEEDS TO GET FIXED" << std::endl;
 	glBindTexture(GL_TEXTURE_2D, _handle);
-	// glTexStorage2D(GL_TEXTURE_2D, 1, channels == 4 ? GL_RGBA8 : GL_R8, width, height);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, channels == 4 ? GL_RGBA : GL_RED, GL_UNSIGNED_BYTE, data);
 }
 

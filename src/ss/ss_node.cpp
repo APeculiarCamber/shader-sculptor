@@ -70,21 +70,17 @@ inline bool is_gentype(unsigned int type) {
 }
 
 void Base_GraphNode::propogate_gentype_in_subgraph(Base_Pin* start_pin, unsigned int len_type) {
-    std::cout << "PROPOGATING: " << SS_Parser::type_to_string(GLSL_TYPE(GLSL_Float | (len_type & GLSL_LenMask), 1)) << std::endl;
     std::unordered_set<int> processed_ids;      // only prop length
     propogate_gentype_in_subgraph(start_pin, len_type & GLSL_LenMask, processed_ids);
 }
 
 void Base_GraphNode::propogate_gentype_in_subgraph(Base_Pin* start_pin, 
     unsigned int len_type, std::unordered_set<int>& processed_ids) {
-    std::cout << "PROPPING FOR " << start_pin->owner->_name << "_" << start_pin->owner->_id << ", manager=" << _name << "_" << _id << std::endl;
     // if we reach non-generic parts
     if (!is_gentype(start_pin->type.type_flags)) return;
-    std::cout << "IS VALID FOR PROP" << std::endl;
 
     // Stop if processed already and add to processed
     if (processed_ids.find(_id) != processed_ids.end()) return;
-        std::cout << "NOT IN PROCESSED" << std::endl;
     processed_ids.insert(_id);
     // INPUT
     for (int i = 0; i < num_input; ++i) {
@@ -94,7 +90,6 @@ void Base_GraphNode::propogate_gentype_in_subgraph(Base_Pin* start_pin,
         unsigned int gen_len_intersect = len_type & GLSL_LenMask;
         input_pins[i].type.type_flags &= (~GLSL_LenMask); // clear len mask
         input_pins[i].type.type_flags |= gen_len_intersect; // set len mask
-        std::cout << "Set " << input_pins[i]._name << " with " << SS_Parser::type_to_string(input_pins[i].type) << std::endl;
 
         if (!(input_pins + i)->input) continue;
         (input_pins + i)->input->owner->propogate_gentype_in_subgraph(
@@ -108,7 +103,6 @@ void Base_GraphNode::propogate_gentype_in_subgraph(Base_Pin* start_pin,
         unsigned int gen_len_intersect = len_type & GLSL_LenMask;
         output_pins[o].type.type_flags &= ~GLSL_LenMask; // clear len mask
         output_pins[o].type.type_flags |= gen_len_intersect; // set len mask
-        std::cout << "Set " << output_pins[o]._name << " with " << SS_Parser::type_to_string(output_pins[o].type) << std::endl;
 
         for (Base_InputPin* i_pin : (output_pins + o)->output) {
             if (!i_pin) continue;
@@ -134,9 +128,7 @@ unsigned int Base_GraphNode::get_most_restrictive_gentype_in_subgraph(Base_Pin* 
     std::unordered_set<int> processed_ids;
     // intersect only the len-not-gen-type portion of the pin type
     unsigned int start_type = (start_pin->type.type_flags & GLSL_GenType) >> GLSL_LenToGenPush;
-    std::cout << "Starting with " << SS_Parser::type_to_string(GLSL_TYPE(start_type | GLSL_Float, 1)) << std::endl;
     unsigned int restrict_type = get_most_restrictive_gentype_in_subgraph(start_pin, processed_ids);
-    std::cout << "Restricting final with " << SS_Parser::type_to_string(GLSL_TYPE(restrict_type | GLSL_Float, 1)) << std::endl;
     restrict_type &= start_type;
     return restrict_type;
 }
@@ -176,7 +168,7 @@ unsigned int Base_GraphNode::get_most_restrictive_gentype_in_subgraph(Base_Pin* 
     return most_res_gen_type;
 }
 
-void checkCompileErrors(GLuint shader, std::string type)
+void checkCompileErrors(GLuint shader, const std::string& type)
 {
     GLint success;
     GLchar infoLog[1024];
@@ -184,13 +176,13 @@ void checkCompileErrors(GLuint shader, std::string type)
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
         if(!success)  {
             glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-            std::cout << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+            std::cerr << "ERROR::SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
         }
     } else {
         glGetProgramiv(shader, GL_LINK_STATUS, &success);
         if(!success) {
             glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-            std::cout << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
+            std::cerr << "ERROR::PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << "\n -- --------------------------------------------------- -- " << std::endl;
         }
     }
 }
@@ -220,8 +212,6 @@ void Base_GraphNode::CompileIntermediateCode(SS_Boilerplate_Manager* bp) {
     _cube = new ga_cube_component(_vert_str, _frag_str, bp);
     is_build_dirty = false;
     //unsigned int err = glGetError();
-    //if (err != 0)
-    //    std::cout << "ERROR: " << err << std::endl;
 }
 
 void Base_GraphNode::DrawIntermediateResult(unsigned int framebuffer, std::vector<struct Parameter_Data*>& params) {
@@ -232,7 +222,7 @@ void Base_GraphNode::DrawIntermediateResult(unsigned int framebuffer, std::vecto
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, nodes_rendered_texture, 0);
     
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+        std::cerr << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
 
     glEnable(GL_DEPTH_TEST);
     glViewport(0, 0, 256, 256);
@@ -352,10 +342,7 @@ bool Base_GraphNode::can_connect_pins(Base_InputPin* in_pin, Base_OutputPin* out
     unsigned type_intersect = in_pin->type.type_flags & out_pin->type.type_flags;
 
     bool valid_type = type_intersect & GLSL_TypeMask;
-    std::cout << (valid_type ? "TYPE VALID" : "") << std::endl;
     bool valid_gentype = type_intersect & GLSL_LenMask;
-    std::cout << (valid_gentype ? "GENTYPE VALID" : "") << std::endl;
-    std::cout << size_equal << valid_type << valid_gentype << std::endl;
     return size_equal && valid_type && valid_gentype;
 }
 
@@ -555,10 +542,9 @@ std::string Builtin_GraphNode::process_for_code() {
         // IN THE FUNCTION
         std::string rep = std::string("\%o") + (char)('1' + o);
         auto str_it = temp_inliner.find(rep);
-        if (str_it == std::string::npos) std::cout << "Couldn't find " << rep << " in " << temp_inliner << std::endl;
         std::string fr = temp_inliner.substr(0, str_it);
         std::string ba = temp_inliner.substr(str_it + 3);
-        temp_inliner = fr + pin_parse_out_names[o] + ba;
+        temp_inliner = fr.append(pin_parse_out_names[o]).append(ba);
     }
     // INPUT
     for (int i = 0; i < num_input; ++i) {
@@ -568,7 +554,7 @@ std::string Builtin_GraphNode::process_for_code() {
             if (str_it == std::string::npos) break;
             std::string fr = temp_inliner.substr(0, str_it);
             std::string ba = temp_inliner.substr(str_it + 3);
-            temp_inliner = fr + in_pin_names[i] + ba;
+            temp_inliner = fr .append(in_pin_names[i]).append(ba);
         }
     }
     // if we didn't replace the 'first' output placeholder then we use assignment directly
@@ -830,7 +816,6 @@ Terminal_Node::~Terminal_Node()  {
 
 
 std::string Constant_Node::request_output(int out_index) {
-    std::cout << "CONSTANT OUTPUT REQUEST START" << output_pins->type.IsMatrix() << std::endl;
     GLSL_TYPE t = output_pins->type;
     float* f_data = (float*)_data;
     std::stringstream sss;
@@ -853,15 +838,12 @@ std::string Constant_Node::request_output(int out_index) {
     } else {
         sss << "vec" << size << "(";
     }
-    std::cout << "Picked a size of " << size << std::endl;
     for (int f = 0; f < size; ++f) {
-        std::cout << "Trying to get from " << f_data << std::endl;
         sss << f_data[f];
         sss << ((f + 1 != size) ? ", " : ")");
     }
 
     std::string s = sss.str();
-    std::cout << "CONSTANT OUTPUT REQUEST END" << std::endl;
     return s;
 }
 std::string Constant_Node::process_for_code() {
