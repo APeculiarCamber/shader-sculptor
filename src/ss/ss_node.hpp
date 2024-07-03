@@ -54,10 +54,10 @@ enum GLSL_TYPE_ENUM {
 
 
 struct GLSL_TYPE {
-    GLSL_TYPE() {}
+    GLSL_TYPE() = default;
     GLSL_TYPE(unsigned int flags, unsigned int size) : type_flags(flags), arr_size(size) {}
-    unsigned int type_flags;
-    unsigned int arr_size;
+    unsigned int type_flags{};
+    unsigned int arr_size{};
 
     GLSL_TYPE intersect(const GLSL_TYPE& other) {
         // intersect with in mind : gentype, genvec, overrides on single, array size,y if array
@@ -65,18 +65,18 @@ struct GLSL_TYPE {
         arr_size = 1;
         return *this;
     }
-    GLSL_TYPE intersect_copy(const GLSL_TYPE& other){
+    GLSL_TYPE IntersectCopy(const GLSL_TYPE& other) const{
         GLSL_TYPE type;
         type.type_flags = type_flags & other.type_flags;
         type.arr_size = 1;
         return type;
     }
 
-    inline bool is_same_value_type(const GLSL_TYPE& other) {
+    inline bool IsSameValueType(const GLSL_TYPE& other) const {
         return other.type_flags & type_flags & GLSL_TypeMask;
     }
 
-    inline bool is_matrix() {
+    inline bool IsMatrix() const {
         return type_flags & GLSL_Mat;
     }
 };
@@ -120,16 +120,18 @@ struct Base_Pin {
 
     ImVec2 get_size(float circle_off, float border);
     virtual void draw(ImDrawList* drawList, ImVec2 pos, float circle_off, float border) {};
-    virtual ImVec2 get_pin_pos(float circle_off, float border, float* radius) {};
+    virtual ImVec2 get_pin_pos(float circle_off, float border, float* radius) { return {0, 0}; };
 
     virtual bool has_connections() { return false; }
     virtual void disconnect_all_from(SS_Graph* g) {};
+
+    virtual ~Base_Pin() = default;
 };
 
 // INPUT PIN CLASS
 struct Base_InputPin : Base_Pin {
     Base_OutputPin* input = nullptr;
-    void draw(ImDrawList* drawList, ImVec2 pos, float circle_off, float border);
+    void draw(ImDrawList* drawList, ImVec2 pos, float circle_off, float border) override;
     ImVec2 get_pin_pos(float circle_off, float border, float* radius) override;
     bool has_connections() override { return input; }
     void disconnect_all_from(SS_Graph* g) override;
@@ -139,9 +141,9 @@ struct Base_InputPin : Base_Pin {
 struct Base_OutputPin : Base_Pin {
     std::vector<Base_InputPin*> output;
     std::string get_pin_output_name();
-    void draw(ImDrawList* drawList, ImVec2 pos, float circle_off, float border);
+    void draw(ImDrawList* drawList, ImVec2 pos, float circle_off, float border) override;
     ImVec2 get_pin_pos(float circle_off, float border, float* radius) override;
-    bool has_connections() override { return output.size(); }
+    bool has_connections() override { return not output.empty(); }
     void disconnect_all_from(SS_Graph* g) override;
 };
 
@@ -149,10 +151,9 @@ struct Base_OutputPin : Base_Pin {
 // BASE CLASS FOR ALL GRAPH NODES, HANDLES MOST OF THE DRAWING
 class Base_GraphNode {
 public:
-    ~Base_GraphNode();
-    virtual void handle_destruction() {}
-    virtual void set_bounds(float scale = 1);
-    virtual void draw(ImDrawList* drawList, ImVec2 pos_offset = ImVec2(0, 0), bool is_hover = false);
+    virtual ~Base_GraphNode();
+    virtual void set_bounds(float scale);
+    virtual void draw(ImDrawList* drawList, ImVec2 pos_offset, bool is_hover);
     void draw_output_connects(ImDrawList* drawList, ImVec2 offset);
     bool is_hovering(ImVec2 mouse_pos);
     Base_Pin* get_hovered_pin(ImVec2 mouse_pos);
@@ -160,14 +161,13 @@ public:
 
     void toggle_display() { is_display_up = !is_display_up; };
 
-    virtual std::string request_output(int out_index) {return ""; };
-    virtual std::string process_for_code() { return ""; };
-    void set_shader_intermed(const std::string& frag_shad, const std::string& vert_shad);
+    virtual std::string request_output(int out_index) = 0;
+    virtual std::string process_for_code() = 0;
+    void SetShaderCode(const std::string& frag_shad, const std::string& vert_shad);
 
     unsigned int get_most_restrictive_gentype_in_subgraph(Base_Pin* start_pin);
     unsigned int get_most_restrictive_gentype_in_subgraph(Base_Pin* start_pin, std::unordered_set<int>& processed_ids);
 
-    bool only_first_out_connected();
     void propogate_gentype_in_subgraph(Base_Pin* start_pin, unsigned int type);
     void propogate_gentype_in_subgraph(Base_Pin* start_pin, unsigned int type, std::unordered_set<int>& processed_ids);
     void propogate_build_dirty();
@@ -177,14 +177,12 @@ public:
     virtual bool can_connect_pins(Base_InputPin* in_pin, Base_OutputPin* out_pin);
     virtual void inform_of_connect(Base_InputPin* in_pin, Base_OutputPin* out_pin) {}
 
-    bool generate_intermed_image();
-    void draw_to_intermed(unsigned int framebuffer, SS_Boilerplate_Manager* bp, std::vector<struct Parameter_Data*>& params);
-    void draw_to_intermed_no_recompile(unsigned int framebuffer, std::vector<struct Parameter_Data*>& params);
-    void update_vertex_shader_only(std::string vert_shader_code);
-    void update_frag_shader_only(std::string frag_shader_code);
-    
-    unsigned int get_image_texture_id() { return nodes_rendered_texture; }
-    virtual bool can_draw_intermed_image() { return !output_pins->type.is_matrix() && output_pins->type.arr_size == 1; ; };
+    bool GenerateIntermediateResultFrameBuffers();
+    void CompileIntermediateCode(SS_Boilerplate_Manager* bp);
+    void DrawIntermediateResult(unsigned int framebuffer, std::vector<struct Parameter_Data*>& params);
+
+    unsigned int get_image_texture_id() const { return nodes_rendered_texture; }
+    virtual bool can_draw_intermed_image() { return !output_pins->type.IsMatrix() && output_pins->type.arr_size == 1; ; };
     ImTextureID bind_and_get_image_texture();
 
     bool can_be_deleted() { return get_node_type() != NODE_TERMINAL; };
@@ -207,8 +205,8 @@ public:
 
     unsigned int nodes_rendered_texture;
     unsigned int nodes_depth_texture;
-    std::string _frag_str;
-    std::string _vert_str;
+    std::string _frag_str { }; // "#version 400\nvoid main() { gl_FragColor = vec4(0.5, 0.0, 1.0, 1.0); }"
+    std::string _vert_str { }; // "#version 400\nlayout(location = 0) in vec3 in_vertex; void main() { gl_Position = vec4(in_vertex, 1.0); }"
 
     ImVec2 display_panel_rel_pos;
     ImVec2 display_panel_rel_size;
@@ -236,10 +234,9 @@ enum GRAPH_PARAM_TYPE : unsigned int;
 class Builtin_GraphNode : public Base_GraphNode {
 public:
     Builtin_GraphNode(Builtin_Node_Data& data, int id, ImVec2 pos);
-    
-    std::string make_inline_function_call(std::string& format, const std::vector<std::string>& input_strs, int off = 0);
- 
-    NODE_TYPE get_node_type() { return NODE_BUILTIN; };
+
+    ~Builtin_GraphNode() override;
+    NODE_TYPE get_node_type() override { return NODE_BUILTIN; };
     
     std::string request_output(int out_index) override;
     std::string process_for_code() override;
@@ -259,10 +256,10 @@ public:
     void* _data;
 
     Constant_Node(Constant_Node_Data& data, int id, ImVec2 pos);
-    void handle_destruction() override {if (_data) free(_data); }
-    NODE_TYPE get_node_type() { return NODE_CONSTANT; };
+    ~Constant_Node() override;
+    NODE_TYPE get_node_type() override { return NODE_CONSTANT; };
 
-    bool can_draw_intermed_image() override { return !output_pins->type.is_matrix() && output_pins->type.arr_size == 1; };
+    bool can_draw_intermed_image() override { return !output_pins->type.IsMatrix() && output_pins->type.arr_size == 1; };
 
     std::string request_output(int out_index) override;
     std::string process_for_code() override;
@@ -277,7 +274,7 @@ public:
     void make_vec_break(int s);
     void make_vec_make(int s);
 
-     NODE_TYPE get_node_type() { return NODE_VECTOR_OP; };
+     NODE_TYPE get_node_type() override { return NODE_VECTOR_OP; };
 
     bool can_draw_intermed_image() override { return false; };
 
@@ -288,10 +285,11 @@ public:
 class Param_Node : public Base_GraphNode {
 public:
     Param_Node(Parameter_Data* data, int id, ImVec2 pos);
+    ~Param_Node() override;
 
-    NODE_TYPE get_node_type() { return NODE_PARAM; };
+    NODE_TYPE get_node_type() override { return NODE_PARAM; };
 
-    bool can_draw_intermed_image() override { return !output_pins->type.is_matrix() && output_pins->type.arr_size == 1; ; };
+    bool can_draw_intermed_image() override { return !output_pins->type.IsMatrix() && output_pins->type.arr_size == 1; ; };
 
 
     std::string request_output(int out_index) override;
@@ -303,23 +301,27 @@ public:
 struct Boilerplate_Var_Data;
 class Terminal_Node : public Base_GraphNode {
 public:
+    ~Terminal_Node() override;
     Terminal_Node(const std::vector<Boilerplate_Var_Data>& terminal_pins, int id, ImVec2 pos);
     bool can_draw_intermed_image() override { return true; };
 
+    std::string request_output(int out_index) override { return {}; }
+    std::string process_for_code() override { return {}; }
 
     bool frag_node;
-     NODE_TYPE get_node_type() { return NODE_TERMINAL; };
+     NODE_TYPE get_node_type() override { return NODE_TERMINAL; };
 };
 
 class Boilerplate_Var_Node : public Base_GraphNode {
 public:
     Boilerplate_Var_Node(Boilerplate_Var_Data data, SS_Boilerplate_Manager* bp, int id, ImVec2 pos);
-    bool can_draw_intermed_image() override { return !output_pins->type.is_matrix() && output_pins->type.arr_size == 1; ; };
+    ~Boilerplate_Var_Node() override;;
+    bool can_draw_intermed_image() override { return !output_pins->type.IsMatrix() && output_pins->type.arr_size == 1; };
 
 
     bool frag_node;
     SS_Boilerplate_Manager* _bp_manager;
-    NODE_TYPE get_node_type() { return NODE_BOILER_VAR; };
+    NODE_TYPE get_node_type() override { return NODE_BOILER_VAR; };
     
     std::string request_output(int out_index) override;
     std::string process_for_code() override;

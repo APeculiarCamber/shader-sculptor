@@ -8,15 +8,11 @@
 */
 
 #include "ga_material.h"
-#include "..\ss\ss_graph.hpp"
+#include "ss_graph.hpp"
 
-#include <cassert>
-#include <fstream>
 #include <iostream>
 #include <string>
 #include <chrono>
-#include <ctime>
-#include <numeric>
 
 using std::chrono::duration_cast;
 using std::chrono::milliseconds;
@@ -38,7 +34,7 @@ bool ga_material::init(std::string& source_vs, std::string& source_fs)
 {
 	bool succ = true;
 	// _vs = new ga_shader(source_vs.c_str(), GL_VERTEX_SHADER);
-	std::cout << "Trying to compile:\n" << source_vs << std::endl;
+	std::cout << "MatVS -- Trying to compile:\n" << source_vs << std::endl;
 	_vs = new ga_shader(source_vs.c_str(), GL_VERTEX_SHADER);
 	if (!_vs->compile())
 	{
@@ -47,7 +43,7 @@ bool ga_material::init(std::string& source_vs, std::string& source_fs)
 	}
 
 	// _fs = new ga_shader(source_fs.c_str(), GL_FRAGMENT_SHADER);
-	std::cout << "Trying to compile:\n" << source_fs << std::endl;
+	std::cout << "MatFS -- Trying to compile:\n" << source_fs << std::endl;
 	_fs = new ga_shader(source_fs.c_str(), GL_FRAGMENT_SHADER);
 	if (!_fs->compile())
 	{
@@ -83,7 +79,11 @@ unsigned int ga_material::set_uniforms_by_type(Parameter_Data* p_data, unsigned 
 			case SS_Vec2: _program->get_uniform(p_data->_param_name).set(*(ga_vec2f*)p_data->data_container); break;
 			case SS_Vec3: _program->get_uniform(p_data->_param_name).set(*(ga_vec3f*)p_data->data_container); break;
 			case SS_Vec4: _program->get_uniform(p_data->_param_name).set(*(ga_vec4f*)p_data->data_container); break;
-		}
+            case SS_Mat2:
+            case SS_MAT:
+
+                break;
+        }
 	}
 	return texture_id;
 }
@@ -170,7 +170,7 @@ void ga_pbr_material::bind(const ga_mat4f& view, const ga_mat4f& proj, const ga_
 void ga_material::update_vertex_shader(std::string& vert_shader_code) {
 	bool succ = true;
 	// _vs = new ga_shader(source_vs.c_str(), GL_VERTEX_SHADER);
-	std::cout << "Trying to compile:\n" << vert_shader_code << std::endl;
+	std::cout << "VertShader -- Trying to compile:\n" << vert_shader_code << std::endl;
 	if (_vs) { delete _vs; }
 	_vs = new ga_shader(vert_shader_code.c_str(), GL_VERTEX_SHADER);
 	if (!_vs->compile()) {
@@ -193,7 +193,7 @@ void ga_material::update_vertex_shader(std::string& vert_shader_code) {
 void ga_material::update_frag_shader(std::string& frag_code) {
 	bool succ = true;
 	// _vs = new ga_shader(source_vs.c_str(), GL_VERTEX_SHADER);
-	std::cout << "Trying to compile:\n" << frag_code << std::endl;
+	std::cout << "FragShader -- Trying to compile:\n" << frag_code << std::endl;
 	if (_fs) { delete _fs; }
 	_fs = new ga_shader(frag_code.c_str(), GL_VERTEX_SHADER);
 	if (!_fs->compile()) {

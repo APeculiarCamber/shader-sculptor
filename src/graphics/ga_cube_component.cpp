@@ -9,7 +9,7 @@
 
 #include "ga_cube_component.h"
 #include "ga_material.h"
-#include "..\ss\ss_boilerplate.hpp"
+#include "ss_boilerplate.hpp"
 
 ga_cube_component::ga_cube_component(std::string& source_vs, std::string& source_fs,
 	SS_Boilerplate_Manager* bp)

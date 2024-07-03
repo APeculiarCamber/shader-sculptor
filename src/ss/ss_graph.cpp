@@ -7,9 +7,6 @@
 
 /**
  * @brief Construct a new ss graph::ss graph object
- *          
- * 
- * @param bp  : EXPECTS IT TO BE HEAP/DYNAMIC MEMORY
  */
 SS_Graph::SS_Graph(SS_Boilerplate_Manager* bp) {
     glGenFramebuffers(1, &_main_framebuffer);
@@ -18,18 +15,12 @@ SS_Graph::SS_Graph(SS_Boilerplate_Manager* bp) {
     drag_pin = nullptr;
 
     _bp_manager = bp;
-    Terminal_Node* vn = new Terminal_Node(_bp_manager->get_vert_pin_data(), ++current_id, ImVec2(300, 300));
+    auto* vn = new Terminal_Node(_bp_manager->get_vert_pin_data(), ++current_id, ImVec2(300, 300));
     nodes.insert(std::make_pair(current_id, (Base_GraphNode*)vn));
-    Terminal_Node* fn = new Terminal_Node(_bp_manager->get_frag_pin_data(), ++current_id, ImVec2(300, 500));    
+    auto* fn = new Terminal_Node(_bp_manager->get_frag_pin_data(), ++current_id, ImVec2(300, 500));
     nodes.insert(std::make_pair(current_id, (Base_GraphNode*)fn));
     _bp_manager->set_terminal_nodes(vn, fn);
-    std::cout << "TRY TO DRAW UP TERMINAL" << std::endl;
-
-    vn->generate_intermed_image();
-    vn->draw_to_intermed(_main_framebuffer, _bp_manager, param_datas);
-
-    fn->generate_intermed_image();
-    fn->draw_to_intermed(_main_framebuffer, _bp_manager, param_datas);
+    this->GenerateShaderTextAndPropagate();
 
     search_buf[0] = 0;
     img_buf[0] = 0;
@@ -52,7 +43,7 @@ bool SS_Graph::delete_node(int id) {
     if (it->second == drag_node) { drag_node = nullptr; drag_pin = nullptr; }
 
     Base_GraphNode* n = it->second;
-    disconnect_all_pins(n);
+    DisconnectAllPins(n);
     nodes.erase(it);
     if (it->second->get_node_type() == NODE_PARAM) {
         param_datas[0]->remove_node_type(it->second->_id);
@@ -64,7 +55,7 @@ bool SS_Graph::delete_node(int id) {
 
 
 // returns TRUE if DAG violation
-bool SS_Graph::check_for_dag_violation(Base_InputPin* in_pin, Base_OutputPin* out_pin) {
+bool SS_Graph::CheckForDAGViolation(Base_InputPin* in_pin, Base_OutputPin* out_pin) {
     std::queue<Base_GraphNode*> n_queue;
     Base_GraphNode* n;
     n_queue.push(in_pin->owner);
@@ -73,30 +64,28 @@ bool SS_Graph::check_for_dag_violation(Base_InputPin* in_pin, Base_OutputPin* ou
         n_queue.pop();
         if (n == out_pin->owner) return true;
         for (int p = 0; p < n->num_output; ++p)
-            for (int o = 0; o < n->output_pins[p].output.size(); ++o)
-                n_queue.push(n->output_pins[p].output[o]->owner);
+            for (auto & o : n->output_pins[p].output)
+                n_queue.push(o->owner);
     }
     return false;
 }
 
 // 0 for input change needed, 1 for no change needed, 2 for output changed needed
 // -1 for failed
-bool SS_Graph::pins_connectable(Base_InputPin* in_pin, Base_OutputPin* out_pin) {
-
+bool SS_Graph::ArePinsConnectable(Base_InputPin* in_pin, Base_OutputPin* out_pin) {
     bool in_accepeted = in_pin->owner->can_connect_pins(in_pin, out_pin);
     bool out_accepeted = in_pin->owner->can_connect_pins(in_pin, out_pin);
-    bool dag_maintained = !check_for_dag_violation(in_pin, out_pin);
-    std::cout << in_accepeted << " " << out_accepeted << " " << dag_maintained << std::endl;
+    bool dag_maintained = !CheckForDAGViolation(in_pin, out_pin);
     return in_accepeted && out_accepeted && dag_maintained;
 }
 
-bool SS_Graph::connect_pins(Base_InputPin* in_pin, Base_OutputPin* out_pin) {
-    if (!pins_connectable(in_pin, out_pin)) return false;
+bool SS_Graph::ConnectPins(Base_InputPin* in_pin, Base_OutputPin* out_pin) {
+    if (!ArePinsConnectable(in_pin, out_pin)) return false;
 
     if (in_pin->input)
-        disconnect_pins(in_pin, in_pin->input);
+        DisconnectPins(in_pin, in_pin->input);
 
-    GLSL_TYPE intersect_type = in_pin->type.intersect_copy(out_pin->type);
+    GLSL_TYPE intersect_type = in_pin->type.IntersectCopy(out_pin->type);
     in_pin->owner->propogate_gentype_in_subgraph(in_pin, intersect_type.type_flags & GLSL_LenMask);
     out_pin->owner->propogate_gentype_in_subgraph(out_pin, intersect_type.type_flags & GLSL_LenMask);
     in_pin->owner->propogate_build_dirty();
@@ -110,7 +99,7 @@ bool SS_Graph::connect_pins(Base_InputPin* in_pin, Base_OutputPin* out_pin) {
 }
 
 
-bool SS_Graph::disconnect_pins(Base_InputPin* in_pin, Base_OutputPin* out_pin, bool reprop) {
+bool SS_Graph::DisconnectPins(Base_InputPin* in_pin, Base_OutputPin* out_pin, bool reprop) {
     in_pin->input = nullptr;
     auto ptr = std::find(out_pin->output.begin(), out_pin->output.end(), in_pin);
     out_pin->output.erase(ptr);
@@ -119,32 +108,29 @@ bool SS_Graph::disconnect_pins(Base_InputPin* in_pin, Base_OutputPin* out_pin, b
         // INPUT PIN PROPOGATION
         if (in_pin->type.type_flags & GLSL_GenType) {
             unsigned int new_in_type = in_pin->owner->get_most_restrictive_gentype_in_subgraph(in_pin);
-            std::cout << "GOT MOST RESTRICTIVE FROM IN: " << new_in_type << " - " << SS_Parser::type_to_string(GLSL_TYPE(GLSL_Float | new_in_type, 1)) << std::endl;
             in_pin->owner->propogate_gentype_in_subgraph(in_pin, new_in_type);
         }
         // OUTPUT PIN PROPOGATION
         if (out_pin->type.type_flags & GLSL_GenType) {
             unsigned int new_out_type = out_pin->owner->get_most_restrictive_gentype_in_subgraph(out_pin);
-            std::cout << "GOT MOST RESTRICTIVE FROM OUT: " << new_out_type << " - " << SS_Parser::type_to_string(GLSL_TYPE(GLSL_Float | new_out_type, 1)) << std::endl;
             out_pin->owner->propogate_gentype_in_subgraph(out_pin, new_out_type);
         }
-        std::cout << std::endl;
     }
     in_pin->owner->propogate_build_dirty();
+    return true;
 }
 
-bool SS_Graph::disconnect_all_pins(Base_GraphNode* node) {
+bool SS_Graph::DisconnectAllPins(Base_GraphNode* node) {
     for (int i = 0; i < node->num_input; ++i) {
         if (node->input_pins[i].input)
-            disconnect_pins(node->input_pins + i, node->input_pins[i].input);
+            DisconnectPins(node->input_pins + i, node->input_pins[i].input);
     }
 
     for (int o = 0; o < node->num_output; ++o) {
         Base_OutputPin* o_pin = node->output_pins + o;
         std::vector<Base_InputPin*> output_COPY(node->output_pins[o].output);
         for (Base_InputPin* i_pin : output_COPY) {
-            std::cout << i_pin->type.type_flags << std::endl;
-            disconnect_pins(i_pin, o_pin);
+            DisconnectPins(i_pin, o_pin);
         }
     }
     return true;
@@ -153,7 +139,7 @@ bool SS_Graph::disconnect_all_pins(Base_GraphNode* node) {
 bool SS_Graph::disconnect_all_pins_by_id(int id) {
     auto it = nodes.find(id);
     if (it == nodes.end()) return false;
-    return disconnect_all_pins(it->second);
+    return DisconnectAllPins(it->second);
 }
 
 void SS_Graph::invalidate_shaders() {
@@ -192,13 +178,13 @@ void SS_Graph::inform_of_parameter_change(Parameter_Data* param) {
     std::vector<int>& node_ids = param->param_node_ids;
     for (int id : node_ids) {
         auto node_it = nodes.find(id);
-        disconnect_all_pins(node_it->second);
+        DisconnectAllPins(node_it->second);
     }
 }
 
 
 void SS_Graph::draw_param_panels() {
-    ImGui::Begin("Parameters", 0, ImGuiWindowFlags_NoScrollbar);
+    ImGui::Begin("Parameters", nullptr, ImGuiWindowFlags_NoScrollbar);
     ImGui::BeginChild("Red",  ImGui::GetWindowSize() - ImVec2(0, 50), true, ImGuiWindowFlags_HorizontalScrollbar);
     for (Parameter_Data* p_data : param_datas) {
         p_data->draw(this);
@@ -228,19 +214,18 @@ unsigned int try_to_gen_texture(const char* img_file) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
-        std::cout << "ADDING IMAGE " << texture << " OF " << width << " , " << height << " with " << nrChannels << std::endl;
     } else {
-        std::cout << "Failed to load texture" << std::endl;
+        assert("Failed to generate texture");
     }
     stbi_image_free(data);
     return texture;  
 }
 
 void SS_Graph::draw_image_loader() {
-    ImGui::Begin("Image Loader", 0, ImGuiWindowFlags_NoScrollbar);
+    ImGui::Begin("Image Loader", nullptr, ImGuiWindowFlags_NoScrollbar);
     
     ImGui::BeginChild("ImgLoads",  ImGui::GetWindowSize() - ImVec2(0, 50), true, ImGuiWindowFlags_HorizontalScrollbar);
-    float x_size = fmax(ImGui::GetWindowSize().x - 50, 10);
+    float x_size = fmax(ImGui::GetWindowSize().x - 50.0f, 10.0f);
     for (auto it = images.begin(); it != images.end(); ) {
         unsigned int tex = it->first;
         ImGui::Text("%s ||| ID=%d", it->second.c_str(), tex);
@@ -259,7 +244,7 @@ void SS_Graph::draw_image_loader() {
     if (ImGui::Button("Add Image")) {
         unsigned int tex = try_to_gen_texture(img_buf);
         if (tex > 0) {
-            images.push_back(std::make_pair(tex, std::string(img_buf)));
+            images.emplace_back(tex, std::string(img_buf));
         }
     }
     ImGui::End();
@@ -281,7 +266,7 @@ void SS_Graph::handle_input() {
         ImGui::InputText("Search", search_buf, 256);
         // BUILTIN
         auto built_node_data_list = node_factory.get_matching_builtin_nodes(std::string(search_buf));
-        if (built_node_data_list.size() > 0) ImGui::Text("Builtin:");
+        if (not built_node_data_list.empty()) ImGui::Text("Builtin:");
         for (auto nd : built_node_data_list) {
             if (ImGui::Button(nd._name.c_str())) {
                 Builtin_GraphNode* n = node_factory.build_builtin_node(nd, ++current_id, 
@@ -293,7 +278,7 @@ void SS_Graph::handle_input() {
         }
         // CONSTANT
         auto const_node_data_list = node_factory.get_matching_constant_nodes(std::string(search_buf));
-        if (const_node_data_list.size() > 0) ImGui::Text("CONSTANT:");
+        if (not const_node_data_list.empty()) ImGui::Text("CONSTANT:");
         for (auto nd : const_node_data_list) {
             if (ImGui::Button(nd._name.c_str())) {
                 Constant_Node* n = node_factory.build_constant_node(nd, ++current_id, 
@@ -305,7 +290,7 @@ void SS_Graph::handle_input() {
         }
         // VECTOR OPS
         auto vec_node_data_list = node_factory.get_matching_vector_nodes(std::string(search_buf));
-        if (vec_node_data_list.size() > 0) ImGui::Text("VECTOR OPS:");
+        if (not vec_node_data_list.empty()) ImGui::Text("VECTOR OPS:");
         for (auto nd : vec_node_data_list) {
             if (ImGui::Button(nd._name.c_str())) {
                 Vector_Op_Node* n = node_factory.build_vec_op_node(nd, ++current_id, 
@@ -317,7 +302,7 @@ void SS_Graph::handle_input() {
         }
         // PARAMS
         std::vector<Parameter_Data*>& param_node_data_list = node_factory.get_matching_param_nodes(std::string(search_buf), param_datas); // param data managed by graph
-        if (param_node_data_list.size() > 0) ImGui::Text("PARAMETERS:");
+        if (not param_node_data_list.empty()) ImGui::Text("PARAMETERS:");
 
         for (Parameter_Data* nd : param_node_data_list) {
             if (ImGui::Button(nd->_param_name + 2)) {
@@ -333,7 +318,7 @@ void SS_Graph::handle_input() {
         }
         // BOILERPLATE
          auto bp_node_data_list = node_factory.get_matching_boilerplate_nodes(std::string(search_buf), _bp_manager);
-        if (bp_node_data_list.size() > 0) ImGui::Text("DEFAULTS:");
+        if (not bp_node_data_list.empty()) ImGui::Text("DEFAULTS:");
         for (auto nd : bp_node_data_list) {
             if (ImGui::Button(nd._name.c_str())) {
                 Boilerplate_Var_Node* n = node_factory.build_boilerplate_var_node(
@@ -362,7 +347,8 @@ void SS_Graph::handle_input() {
 
     Base_GraphNode* hover_node = hover_id != -1 ? nodes[hover_id] : nullptr;
     Base_Pin* hover_pin = hover_node ? hover_node->get_hovered_pin(m_pos - (_pos_offset + _drag_pos_offset)) : nullptr;
-    bool display_button_hovered = hover_node ? hover_node->is_display_button_hovered_over(m_pos - (_pos_offset + _drag_pos_offset)) : false;
+    bool display_button_hovered = hover_node != nullptr &&
+                                  hover_node->is_display_button_hovered_over(m_pos - (_pos_offset + _drag_pos_offset));
     if (display_button_hovered) {
         ImGui::BeginTooltip();
         ImGui::Text("DISPLAY INTERMED");
@@ -377,8 +363,6 @@ void SS_Graph::handle_input() {
         selected_node =  nullptr;
         drag_node = nullptr;
         drag_pin = nullptr;
-        hover_pin = nullptr;
-        hover_node = nullptr;
         return;
     }
 
@@ -414,9 +398,9 @@ void SS_Graph::handle_input() {
 
         if (drag_pin && hover_pin) {
             if (drag_pin->bInput && !hover_pin->bInput)
-                connect_pins((Base_InputPin*)drag_pin, (Base_OutputPin*)hover_pin);
+                ConnectPins((Base_InputPin *) drag_pin, (Base_OutputPin *) hover_pin);
             else if (!drag_pin->bInput && hover_pin->bInput)
-                connect_pins((Base_InputPin*)hover_pin, (Base_OutputPin*)drag_pin);
+                ConnectPins((Base_InputPin *) hover_pin, (Base_OutputPin *) drag_pin);
         }
         drag_node = nullptr;
         drag_pin = nullptr;
@@ -439,7 +423,6 @@ DELETE: DELETE HOVERED NODE OR PIN)");
 }
 
 bool SS_Graph::draw_saving_window() {
-    bool ret_b = true;
     ImGui::SetNextWindowFocus();
     ImGui::Begin("Save LOCATION");
     ImGui::InputText("SAVE LOCATION", save_buf, 128);
@@ -448,29 +431,21 @@ bool SS_Graph::draw_saving_window() {
     if (ImGui::Button("SAVE GRAPH CODE")) {
         std::ofstream frag_oss(std::string(save_buf) + "/" + std::string(save_buf + 128));
         std::ofstream vert_oss(std::string(save_buf) + "/" + std::string(save_buf + 192));
-        Construct_Text_For_Vert(_bp_manager->get_terminal_vert_node());
-        Construct_Text_For_Frag(_bp_manager->get_terminal_frag_node());
-        
-        if (_current_frag_code.empty())
-            frag_oss << _bp_manager->get_default_frag_shader() << std::endl;
-        else
-            frag_oss << _current_frag_code << std::endl; 
-        if (_current_vert_code.empty())
-            vert_oss << _bp_manager->get_default_vert_shader() << std::endl;
-        else
-            vert_oss << _current_vert_code << std::endl;
-        ret_b = false;
+        frag_oss << _current_frag_code << std::endl;
+        vert_oss << _current_vert_code << std::endl;
+        return false;
     }
     if (ImGui::Button("CLOSE WITH SAVE"))
-        ret_b = false;
+        return false;
     ImGui::End();
-    return ret_b;
+    return true;
 }
 
 bool SS_Graph::draw_credits() {
     ImGui::Begin("CREDITS", &_credits_up);
-    ImGui::Text(R"(LEAD PROGRAMMER: Jay Idema
-A MASSIVE THANKS TO:
+    ImGui::Text(R"(DEVELOPER: Jay Idema
+
+A Massive Thanks To:
 Professor Eric Ameres
 Joey de Vries, Author of LearnOpenGL, from which a good handful of PBR-like shader code was used
 Omar Cornut for Dear IMGUI)");
@@ -481,26 +456,16 @@ Omar Cornut for Dear IMGUI)");
 void handle_menu_tooltip(const char* tip) {
     if (ImGui::IsItemHovered()) {
         ImGui::BeginTooltip();
-        ImGui::Text(tip);
+        ImGui::Text("%s", tip);
         ImGui::EndTooltip();
     }
 }
 
 void SS_Graph::draw_menu_buttons() {
     if (ImGui::BeginMenuBar()) {
-        // ImGui::Tooltip("Build the vertex shader and link it to the current fragment shader");
-        if (ImGui::Button("BUILD VERTEX SHADER")) {
-            if (_bp_manager->get_terminal_vert_node()) {
-                std::cout << "BUILDING VERT" << std::endl;
-                Construct_Text_For_Vert(_bp_manager->get_terminal_vert_node());
-            }
-        }
-        handle_menu_tooltip("Build and link the vertex shader");
-        if (ImGui::Button("BUILD FRAG SHADER")) {
-            if (_bp_manager->get_terminal_frag_node()) {
-                std::cout << "BUILDING FRAG" << std::endl;
-                Construct_Text_For_Frag(_bp_manager->get_terminal_frag_node());
-            }
+        handle_menu_tooltip("Build and link the shaders, re-compiles dirty intermediate results");
+        if (ImGui::Button("BUILD SHADERS")) {
+            this->GenerateShaderTextAndPropagate();
         }
         handle_menu_tooltip("Build and link the fragment shader");
         if (ImGui::Button("SAVE NODES")) {
@@ -532,12 +497,13 @@ void SS_Graph::draw() {
     // drawn nodes, may want to decrease view size
     for (auto n_it : nodes) {
         if (n_it.second->is_display_up)
-            n_it.second->draw_to_intermed_no_recompile(_main_framebuffer, param_datas);
+            n_it.second->DrawIntermediateResult(_main_framebuffer, param_datas);
     }
 
+    const auto& io = ImGui::GetIO();
     ImGui::SetNextWindowPos(ImVec2(0, 0));
-    ImGui::SetNextWindowSize(ImVec2(2000, 2000));
-    ImGui::Begin("SHADER SCULPTER", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_MenuBar);
+    ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));
+    ImGui::Begin("SHADER SCULPTER", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_MenuBar);
     draw_menu_buttons();
     
     if (!_is_saving)
@@ -558,21 +524,28 @@ void SS_Graph::draw() {
 }
 
 
-void SS_Graph::draw_node_context_panel() {
+void SS_Graph::draw_node_context_panel() const {
     ImGui::Begin("Node Context Panel");
     ImGui::Text("NODE:");
     if (selected_node) {
-        ImGui::Text(selected_node->_name.c_str());
+        ImGui::Text("%s", selected_node->_name.c_str());
         if (selected_node->get_node_type() == NODE_CONSTANT) {
-            Constant_Node* const_node = (Constant_Node*)selected_node;
+            auto* const_node = (Constant_Node*)selected_node;
             
             if (const_node->_data_type == SS_Float) {
-                float* f_ptr = (float*)const_node->_data;
+                auto* f_ptr = (float*)const_node->_data;
                 switch (const_node->_data_gen) {
                     case SS_Scalar: ImGui::InputFloat("Input Scalar", f_ptr); break;
                     case SS_Vec2: ImGui::InputFloat2("Input Vec2", f_ptr); break;
                     case SS_Vec3: ImGui::InputFloat3("Input Vec3", f_ptr); break;
                     case SS_Vec4: ImGui::InputFloat4("Input Vec4", f_ptr); break;
+
+                    case SS_Mat2:
+                    case SS_Mat3:
+                    case SS_Mat4:
+                    case SS_MAT:
+                        ImGui::Text("ERROR:\nTried to contextualize Mat.\nNot yet supported.");
+                        break;
                 }
             }
         } else {
@@ -587,235 +560,128 @@ void SS_Graph::draw_node_context_panel() {
  * *********************CONSTRUCTION **************************/
 
 
-inline bool SS_Graph::all_output_from_node_processed(Base_GraphNode* node, 
-    const std::unordered_set<Base_GraphNode*>& processed,
-    std::unordered_set<Base_GraphNode*>& down_wind) {
-    for (int p = 0; p < node->num_output; ++p) {
-        for (int o = 0; o < node->output_pins[p].output.size(); ++o) {
-            if (processed.find(node->output_pins[p].output[o]->owner) == processed.end()
-                && down_wind.find(node->output_pins[p].output[o]->owner) != down_wind.end())
-                return false; // if there is a node we need to process which is actually down wind of the root (USED BY IT)
+std::vector<Base_GraphNode*> SS_Graph::ConstructTopologicalOrder(Base_GraphNode* root) {
+    std::vector<Base_GraphNode*> topOrder;
+    std::stack<Base_GraphNode*> processStack;
+    processStack.push(root);
+
+    while (not processStack.empty()) {
+        Base_GraphNode* n = processStack.top();
+        processStack.pop();
+
+        topOrder.push_back(n);
+
+        for (int p = 0; p < n->num_input; ++p) {
+            if (n->input_pins[p].input)
+                processStack.push(n->input_pins[p].input->owner);
         }
     }
-    return true;
+    std::reverse(topOrder.begin(), topOrder.end());
+    return topOrder;
 }
 
-void SS_Graph::get_down_wind_nodes(Base_GraphNode* root, std::unordered_set<Base_GraphNode*>& down_wind) {
-    std::queue<Base_GraphNode*> work_queue;
-    work_queue.push(root);
-    while (work_queue.size() != 0) {
-        Base_GraphNode* n = work_queue.front();
-        work_queue.pop();
-
-        down_wind.insert(n);
-        for (int i = 0; i < n->num_input; ++i) {
-            Base_InputPin* i_pin = n->input_pins + i;
-            if (i_pin->input)
-                work_queue.push(i_pin->input->owner);
-        }
+void SS_Graph::SetIntermediateCodeForNode(std::string intermedCode, Base_GraphNode* node) {
+    std::string output = node->request_output(0);
+    if (output.empty()) {
+        node->SetShaderCode(_current_frag_code, _current_vert_code);
+    } else {
+        intermedCode += "gl_FragColor = ";
+        intermedCode +=  SS_Parser::convert_output_to_color_str(output, node->output_pins->type) + ";\n}\n";
+        node->SetShaderCode(intermedCode, _current_vert_code);
     }
 }
 
-
-void SS_Graph::Construct_Priority_list_from_tree(Base_GraphNode* root, std::vector<Base_GraphNode*>& out) {
-
-    std::stack<Base_GraphNode*> final_stack;
-    std::queue<Base_GraphNode*> work_queue;
-    std::unordered_set<Base_GraphNode*> processed;
-    std::unordered_set<Base_GraphNode*> down_wind;
-    Base_GraphNode* n;
-
-    
-    get_down_wind_nodes(root, down_wind);
-    work_queue.push(root);
-    while (work_queue.size() != 0) {
-        n = work_queue.front();
-        std::cout << "going for " << n->_name << std::endl;
-        work_queue.pop();
-        
-        if (all_output_from_node_processed(n, processed, down_wind)) {
-            for (int p = 0; p < n->num_input; ++p) {
-                if (n->input_pins[p].input)
-                    work_queue.push(n->input_pins[p].input->owner);
-            }
-
-            if (processed.find(n) != processed.end()) continue;
-            final_stack.push(n);
-            std::cout << "PUSHING " << n->_name << std::endl;
-            processed.insert(n);
-        }
-    }
-
-    // 
-    while (final_stack.size() != 0) {
-        n = final_stack.top();
-        final_stack.pop();
-        out.push_back(n);
+void WriteParameterData(std::ostringstream& oss, const std::vector<Parameter_Data*>& params) {
+    for (const Parameter_Data* p_data : params) {
+        oss << "uniform ";
+        oss << SS_Parser::type_to_string(SS_Parser::constant_type_to_type(p_data->_gentype, p_data->_type));
+        oss << " ";
+        oss << p_data->_param_name << ";\n";
     }
 }
 
-void SS_Graph::generate_frag_intermed_code(std::string frag_intermed_code, Base_GraphNode* node) {
-    frag_intermed_code = "// THIS IS INTERMED\n\n" + frag_intermed_code;
-    frag_intermed_code += "gl_FragColor = ";
-    frag_intermed_code += SS_Parser::convert_output_to_color_str(node->request_output(0), node->output_pins->type) + ";";
-    frag_intermed_code += "\n}\n";
-    std::cout << "SETTING TO " << frag_intermed_code << std::endl;
-    node->set_shader_intermed(
-        frag_intermed_code, 
-        _current_vert_code.empty() ? _bp_manager->get_default_vert_shader() : _current_vert_code
-    );
-}
-
-
-void SS_Graph::Construct_Text_For_Vert(Base_GraphNode* root) {
-std::vector<Base_GraphNode*> ordered;
-    Construct_Priority_list_from_tree(root, ordered);
-
-    std::unordered_map<Base_Pin*, std::string> pin_return_vars;
-    std::unordered_set<std::string> processed_funcs;
-    std::unordered_map<Base_GraphNode*, std::string> embedded; 
-    std::vector<std::string> process;
-
-    _current_vert_code.clear();
-
-    // INTERMED FRAG ISS
-    std::string intermed_iss;
-    intermed_iss += _bp_manager->get_frag_init_boilerplate_declares();
-    intermed_iss += '\n';
-    for (Parameter_Data* p_data : param_datas) {
-        intermed_iss += "uniform ";
-        intermed_iss += SS_Parser::type_to_string(SS_Parser::constant_type_to_type(p_data->_gentype, p_data->_type));
-        intermed_iss += " ";
-        intermed_iss += std::string(p_data->_param_name) += ";\n";
-    }
-    intermed_iss += "\nvoid main() {\n";
-    intermed_iss += _bp_manager->get_frag_init_boilerplate_code();
-    intermed_iss += '\n';
-
-    // MAIN ISS
-    std::stringstream iss;
-    iss << _bp_manager->get_vert_init_boilerplate_declares();
-
-    iss << std::endl;
-    for (Parameter_Data* p_data : param_datas) {
-        iss << "uniform "
-            << SS_Parser::type_to_string(SS_Parser::constant_type_to_type(p_data->_gentype, p_data->_type))
-            << " " << (p_data->_param_name) << ";" << std::endl;
-    }
-    
-    iss << std::endl << "void main() {" << std::endl;
-    iss << _bp_manager->get_vert_init_boilerplate_code() << std::endl;
-
-    std::cout << "Finished VERT init boilerplate" << std::endl;
-    // go from least to most dependencies
-    for (int n = 0; n < ordered.size() - 1; ++n) {
-        Base_GraphNode* node = ordered[n];
-        std::cout << "Trying with " << node->_name << "_" << node->_id << std::endl;
-
-        std::string new_line = node->process_for_code();
-        iss << '\t' << new_line;
-        iss << "  // Node " << node->_name << ", id=" << node->_id << std::endl;
-        intermed_iss += ("\t" + new_line);
-
-        if (node->can_draw_intermed_image())
-            generate_frag_intermed_code(intermed_iss, node);
-    }
-
-    iss << _bp_manager->get_vert_terminal_boilerplate_code() << std::endl;
-    iss << "}" << std::endl;
-    std::cout << "Attempting to set intermed" << std::endl;
-    _bp_manager->get_terminal_vert_node()->set_shader_intermed(
-        _current_frag_code.empty() ? _bp_manager->get_default_frag_shader() : _current_frag_code,
-        iss.str());
-    _current_vert_code = iss.str();
-    std::ofstream off("VERT_TEMP.glsl");
-    off << _current_vert_code << std::endl;
-    off.close();
-
-    // DRAW ALL INTERMEDIATES WITH DISPLAY UP
-    for (auto n : ordered) {
-        if (n->can_draw_intermed_image())
-            n->draw_to_intermed(_main_framebuffer, _bp_manager, param_datas);
-    }
-
-    std::vector<Base_GraphNode*> updated_frag_nodes;
-    Construct_Priority_list_from_tree(_bp_manager->get_terminal_frag_node(), updated_frag_nodes);
-    for (auto n : updated_frag_nodes) {
-        if (n->can_draw_intermed_image())
-            n->update_vertex_shader_only(_current_vert_code);
-    }
-}
-
-void SS_Graph::Construct_Text_For_Frag(Base_GraphNode* root) {
-    std::vector<Base_GraphNode*> ordered;
-    Construct_Priority_list_from_tree(root, ordered);
-
-    std::unordered_map<Base_Pin*, std::string> pin_return_vars;
-    std::unordered_set<std::string> processed_funcs;
-    std::unordered_map<Base_GraphNode*, std::string> embedded; 
-    std::vector<std::string> process;
-    
-    _current_frag_code.clear();
-    _current_frag_code += _bp_manager->get_frag_init_boilerplate_declares();
-    _current_frag_code += '\n';
-
-    for (Parameter_Data* p_data : param_datas) {
-        _current_frag_code += "uniform ";
-        _current_frag_code += SS_Parser::type_to_string(SS_Parser::constant_type_to_type(p_data->_gentype, p_data->_type));
-        _current_frag_code += " ";
-        _current_frag_code += std::string(p_data->_param_name) += ";\n";
-    }
-    
-    _current_frag_code += "\nvoid main() {\n";
-    _current_frag_code += _bp_manager->get_frag_init_boilerplate_code();
-    _current_frag_code += '\n';
-
-    std::cout << "Finished init boilerplate" << std::endl;
-    // go from least to most dependencies
-    for (int n = 0; n < ordered.size() - 1; ++n) {
-        Base_GraphNode* node = ordered[n];
-
-        std::string new_line = node->process_for_code();
-        _current_frag_code += '\t';
-        _current_frag_code += new_line;
-        _current_frag_code += ("  // Node " + node->_name + ", id=" + std::to_string(node->_id) + '\n');
-        if (node->can_draw_intermed_image())
-            generate_frag_intermed_code(_current_frag_code, node);
-    }
-
-    _current_frag_code += _bp_manager->get_frag_terminal_boilerplate_code();
-    _current_frag_code += "\n}\n";
-    _bp_manager->get_terminal_frag_node()->set_shader_intermed(
-        _current_frag_code,
-        _current_vert_code.empty() ? _bp_manager->get_default_vert_shader() : _current_vert_code
-    );
+void SS_Graph::SetFinalShaderTextByConstructOrders(const std::vector<Base_GraphNode*>& vertOrder,
+                                                   const std::vector<Base_GraphNode*>& fragOrder) {
+    // MAXIMAL VERTEX BUILD
     {
-        std::ofstream off("FRAG_TEMP.glsl");
-        off << _current_frag_code << std::endl;
-        off.close();
-    }
-    _bp_manager->get_terminal_vert_node()->update_frag_shader_only(_current_frag_code);
-
-    // DRAW ALL INTERMEDIATES WITH DISPLAY UP
-    for (auto n : ordered) {
-        if (n->can_draw_intermed_image()) {
-            std::cout << "TRYING TO DRAW SHADERS FOR " << n->_name << "_" << n->_id << std::endl;
-            n->draw_to_intermed(_main_framebuffer, _bp_manager, param_datas);
+        std::ostringstream vertIss;
+        // -- header
+        vertIss << _bp_manager->get_vert_init_boilerplate_declares() << '\n';
+        WriteParameterData(vertIss, param_datas);
+        // -- main body
+        vertIss << "\nvoid main() {\n" << _bp_manager->get_vert_init_boilerplate_code() << '\n';
+        for (Base_GraphNode* node: vertOrder) {
+            vertIss << "\t" << node->process_for_code() << "  // Node " << node->_name << ", id=" << node->_id << '\n';
         }
+        vertIss << _bp_manager->get_vert_terminal_boilerplate_code() << "\n}\n";
+        _current_vert_code = vertIss.str();
+    }
+    // MAXIMAL FRAG BUILD
+    {
+        std::ostringstream fragIss;
+        // -- header
+        fragIss << _bp_manager->get_frag_init_boilerplate_declares() << '\n';
+        WriteParameterData(fragIss, param_datas);
+        // -- main body
+        fragIss << "\nvoid main() {\n" << _bp_manager->get_frag_init_boilerplate_code() << '\n';
+        for (Base_GraphNode* node: fragOrder) {
+            fragIss << "\t" << node->process_for_code() << "  // Node " << node->_name << ", id=" << node->_id << '\n';
+        }
+        fragIss << _bp_manager->get_frag_terminal_boilerplate_code() << "\n}\n";
+        _current_frag_code = fragIss.str();
     }
 }
 
+void SS_Graph::PropagateIntermediateVertexCodeToNodes(const std::vector<Base_GraphNode*>& vertOrder) {
+    std::ostringstream vertIss;
+    // -- header
+    vertIss << _bp_manager->get_frag_init_boilerplate_declares() << '\n';
+    WriteParameterData(vertIss, param_datas);
+    // -- main body
+    vertIss << "\nvoid main() {\n" << _bp_manager->get_frag_init_boilerplate_code() << '\n';
+    for (Base_GraphNode* node: vertOrder) {
+        vertIss << "\t" << node->process_for_code() << "  // Node " << node->_name << ", id=" << node->_id << '\n';
+        SetIntermediateCodeForNode(vertIss.str(), node);
+    }
+    // -- compile
+    for (Base_GraphNode* node: vertOrder) {
+        node->CompileIntermediateCode(_bp_manager);
+    }
+}
+
+void SS_Graph::PropagateIntermediateFragmentCodeToNodes(const std::vector<Base_GraphNode*>& fragOrder) {
+    std::ostringstream fragIss;
+    // -- header
+    fragIss << _bp_manager->get_frag_init_boilerplate_declares() << '\n';
+    WriteParameterData(fragIss, param_datas);
+    // -- main body
+    fragIss << "\nvoid main() {\n" << _bp_manager->get_frag_init_boilerplate_code() << '\n';
+    for (Base_GraphNode* node: fragOrder) {
+        fragIss << "\t" << node->process_for_code() << "  // Node " << node->_name << ", id=" << node->_id << '\n';
+        SetIntermediateCodeForNode(fragIss.str(), node);
+    }
+    // -- compile
+    for (Base_GraphNode* node: fragOrder) {
+        node->CompileIntermediateCode(_bp_manager);
+    }
+}
+
+void SS_Graph::GenerateShaderTextAndPropagate() {
+    Terminal_Node* vn = _bp_manager->get_terminal_vert_node();
+    Terminal_Node* fn = _bp_manager->get_terminal_frag_node();
+    std::vector<Base_GraphNode*> vertOrder = ConstructTopologicalOrder(vn);
+    std::vector<Base_GraphNode*> fragOrder = ConstructTopologicalOrder(fn);
+
+    SetFinalShaderTextByConstructOrders(vertOrder, fragOrder);
+
+    PropagateIntermediateVertexCodeToNodes(vertOrder);
+    PropagateIntermediateFragmentCodeToNodes(fragOrder);
+}
 
 ///// PARAMETER DATA
-
-Parameter_Data::Parameter_Data(GRAPH_PARAM_TYPE type, GRAPH_PARAM_GENTYPE gentype, SS_Graph* g, unsigned as, int id) {
-    _graph = g;
-    
+Parameter_Data::Parameter_Data(GRAPH_PARAM_TYPE type, GRAPH_PARAM_GENTYPE gentype, SS_Graph* g, unsigned as, int id)
+    : _graph(g), _type(type), _gentype(gentype), _id(id), arr_size(as), _param_name {}, data_container{} {
     sprintf(_param_name, "P_PARAM_%i", id);
-    _type = type;
-    _gentype = gentype;
-    _id = id;
-    arr_size = as;
     make_data();
 }
 
@@ -827,7 +693,7 @@ void Parameter_Data::make_data(bool reset_mem) {
     
     for (int id : param_node_ids) {
         _graph->disconnect_all_pins_by_id(id);
-        Param_Node* pn = (Param_Node*)_graph->get_node(id);
+        auto* pn = (Param_Node*)_graph->get_node(id);
         pn->update_type_from_param(SS_Parser::constant_type_to_type(_gentype, _type, arr_size));
         pn->_name = _param_name;
     }
@@ -844,40 +710,36 @@ bool Parameter_Data::update_type(GRAPH_PARAM_TYPE type) {
         if (type == _type) return false;
         _type = type;
         if (type == SS_Texture2D || type == SS_TextureCube) {
-            std::cout << "MAKING GENTYPE TO SCALAR" << std::endl;
             _gentype = SS_Scalar;
         }
         
         make_data();
         return true;
 }
-bool Parameter_Data::update_array_size(int size) {
-        if (size == arr_size) return false;
-        arr_size = size;
-        make_data();
-        return true;
-}
 
-bool Parameter_Data::is_mat() {
+__attribute__((unused)) bool Parameter_Data::is_mat() const {
     return SS_MAT & _gentype;
 }
-int Parameter_Data::get_len() {
+
+__attribute__((unused)) unsigned Parameter_Data::get_len() const {
     switch (_gentype) {
         case SS_Scalar: return 1 * arr_size;
         case SS_Vec2: return arr_size * 2;
         case SS_Vec3: return arr_size * 3;
-        case SS_Vec4: return arr_size * 4;
+        case SS_Vec4:
         case SS_Mat2: return arr_size * 4;
         case SS_Mat3: return arr_size * 9;
         case SS_Mat4: return arr_size * 16;
+        case SS_MAT:
+            break;
     }
     return 0;
 }
 
-int Parameter_Data::type_to_dropbox_index() {
+int Parameter_Data::type_to_dropbox_index() const {
     return (int)_type;
 }
-int Parameter_Data::gentype_to_dropbox_index() {
+int Parameter_Data::gentype_to_dropbox_index() const {
     return (int)_gentype;
 }
 
@@ -885,10 +747,8 @@ void Parameter_Data::update_name(const char* new_param_name) {
     if (strcmp(new_param_name, _param_name) != 0) {
         strcpy(_param_name, new_param_name);
         for (int id : param_node_ids) {
-            std::cout << "changing name for " << id << std::endl;
-            Param_Node* pn = (Param_Node*)_graph->get_node(id);
+            auto* pn = (Param_Node*)_graph->get_node(id);
             pn->_name = _param_name;
-            std::cout << "VICTORY" << std::endl;
         }
         _graph->invalidate_shaders();
     }
@@ -974,6 +834,8 @@ void Parameter_Data::draw(SS_Graph* graph) {
             ImGui::InputScalarN(("Mat4-In###" + param_name_str + "222").c_str(), data_type, data_container + (data_size*4), 4);
             ImGui::InputScalarN(("Mat4-In###" + param_name_str + "333").c_str(), data_type, data_container + (data_size*8), 4);
             ImGui::InputScalarN(("Mat4-In###" + param_name_str + "444").c_str(), data_type, data_container + (data_size*12), 4); break;
+        case SS_MAT:
+            break;
     }
 
     sprintf(name, "REMOVE PARAM %i", _id);
@@ -988,7 +850,6 @@ void Parameter_Data::draw(SS_Graph* graph) {
 }
 
 void Parameter_Data::add_param_node(int id) {
-    std::cout << "Adding " << id << " to param" << std::endl;
     param_node_ids.push_back(id);
 }
 

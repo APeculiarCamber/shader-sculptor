@@ -29,7 +29,7 @@ class ga_material
 {
 public:
 	ga_material();
-	~ga_material();
+	virtual ~ga_material();
 
 	virtual bool init(std::string& source_vs, std::string& source_fs);
 	virtual unsigned int set_uniforms_by_type(struct Parameter_Data* p_data, unsigned int texture_id);

@@ -21,7 +21,6 @@ Base_GraphNode::~Base_GraphNode() {
     if (output_pins) {
         delete[] output_pins;
     }
-    handle_destruction();
 }
 
 
@@ -55,12 +54,6 @@ Builtin_GraphNode::Builtin_GraphNode(Builtin_Node_Data& data, int id, ImVec2 pos
             output_pins[o]._name = name;
         }
     }
-
-
-inline bool Base_GraphNode::only_first_out_connected() {
-    return num_output == 1 && output_pins->output.size() == 1;
-}
-
 
 
 
@@ -158,7 +151,7 @@ unsigned int Base_GraphNode::get_most_restrictive_gentype_in_subgraph(Base_Pin* 
 
     // set starting most restrictive type as gentype portion of type, shifted to moddable LenType
     unsigned int most_res_gen_type = (start_pin->type.type_flags & GLSL_GenType) >> GLSL_LenToGenPush;
-    unsigned int type_type = start_pin->type.type_flags & GLSL_TypeMask;
+    // unsigned int type_type = start_pin->type.type_flags & GLSL_TypeMask;
 
     // INPUT
     for (int i = 0; i < num_input; ++i) {
@@ -202,9 +195,7 @@ void checkCompileErrors(GLuint shader, std::string type)
     }
 }
 
-bool Base_GraphNode::generate_intermed_image() {
-
-
+bool Base_GraphNode::GenerateIntermediateResultFrameBuffers() {
     glGenTextures(1, &nodes_rendered_texture);
     glBindTexture(GL_TEXTURE_2D, nodes_rendered_texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 256,  256, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
@@ -212,7 +203,7 @@ bool Base_GraphNode::generate_intermed_image() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    // depth and useless stencil, may use later?
+
     glGenTextures(1, &nodes_depth_texture);
     glBindTexture(GL_TEXTURE_2D, nodes_depth_texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, 256, 256, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
@@ -223,46 +214,17 @@ bool Base_GraphNode::generate_intermed_image() {
     return true;
 }
 
-void Base_GraphNode::draw_to_intermed(unsigned int framebuffer, SS_Boilerplate_Manager* bp, std::vector<struct Parameter_Data*>& params) {
-    if (_cube) delete _cube;
-
-    std::cout << "STARTING FOR " << _name << " : " << std::endl;
+// TODO: poor coupling of SS_Boilerplate_Manager, this should be be passed so far down
+void Base_GraphNode::CompileIntermediateCode(SS_Boilerplate_Manager* bp) {
+    delete _cube;
     _cube = new ga_cube_component(_vert_str, _frag_str, bp);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, nodes_depth_texture, 0); 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, nodes_rendered_texture, 0);
-    
-     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-
-    glEnable(GL_DEPTH_TEST);
-    glViewport(0, 0, 256, 256);
-    if (is_build_dirty)
-        glClearColor(0.8f, 0.1f, 0.1f, 1);
-    else
-        glClearColor(0.2f, 0.2f, 0.4f, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
-	ga_mat4f view;
-	view.make_lookat_rh({2, 2, 3}, {0, 0, 0}, {0, 1, 0});
-	ga_mat4f perspective;
-	perspective.make_perspective_rh(ga_degrees_to_radians(45.0f), 1.0f, 0.1f, 10000.0f);
-    _cube->_material->bind(view, perspective, _cube->_transform, params);
-    glBindVertexArray(_cube->_vao);
-    glDrawElements(GL_TRIANGLES, _cube->_index_count, GL_UNSIGNED_SHORT, 0);
-    
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glEnable(GL_DEPTH_TEST);    
-
     is_build_dirty = false;
-
-    unsigned int err = glGetError();
+    //unsigned int err = glGetError();
     //if (err != 0)
     //    std::cout << "ERROR: " << err << std::endl;
 }
 
-void Base_GraphNode::draw_to_intermed_no_recompile(unsigned int framebuffer, std::vector<struct Parameter_Data*>& params) {
+void Base_GraphNode::DrawIntermediateResult(unsigned int framebuffer, std::vector<struct Parameter_Data*>& params) {
 
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
@@ -281,9 +243,9 @@ void Base_GraphNode::draw_to_intermed_no_recompile(unsigned int framebuffer, std
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     if (_cube) {
-        ga_mat4f view;
+        ga_mat4f view{};
         view.make_lookat_rh({2, 2, 3}, {0, 0, 0}, {0, 1, 0});
-        ga_mat4f perspective;
+        ga_mat4f perspective{};
         perspective.make_perspective_rh(ga_degrees_to_radians(45.0f), 1.0f, 0.1f, 10000.0f);
 
         _cube->_material->bind(view, perspective, _cube->_transform, params);
@@ -291,32 +253,11 @@ void Base_GraphNode::draw_to_intermed_no_recompile(unsigned int framebuffer, std
         glDrawElements(GL_TRIANGLES, _cube->_index_count, GL_UNSIGNED_SHORT, 0);
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    unsigned int err = glGetError();
-    //if (err != 0)
-    //    std::cout << "ERROR: " << err << std::endl;
 }
 
-void Base_GraphNode::update_vertex_shader_only(std::string vert_shader_code) {
-    if (_cube)
-        _cube->_material->update_vertex_shader(vert_shader_code);
-}
-void Base_GraphNode::update_frag_shader_only(std::string frag_shader_code) {
-    if (_cube)
-        _cube->_material->update_frag_shader(frag_shader_code);
-}
-
-void Base_GraphNode::set_shader_intermed(const std::string& frag_shad, const std::string& vert_shad) {
+void Base_GraphNode::SetShaderCode(const std::string& frag_shad, const std::string& vert_shad) {
     _frag_str = frag_shad;
     _vert_str = vert_shad;
-/*
-    std::ofstream o_vert("node_" + _name + "_" + std::to_string(_id) + "_vert.txt");
-    o_vert << vert_shad << std::endl;
-    o_vert.close();
-
-    std::ofstream o_frag("node_" + _name + "_" + std::to_string(_id) + "_frag.txt");
-    o_frag << frag_shad << std::endl;
-    o_frag.close();
-*/
 }
 
 
@@ -378,7 +319,6 @@ void Base_GraphNode::set_bounds(float scale) {
     ImVec2 pin_pos = ImVec2(border, name_size.y + line_height + border);
     for (int i = 0; i < num_input; ++i) {
         ImVec2 pin_size = in_pin_sizes[i];
-        Base_InputPin* pin = input_pins + i;
         in_pin_rel_pos.push_back(pin_pos);
         pin_pos.y += (pin_size.y + pin_y_step);
     }
@@ -386,7 +326,6 @@ void Base_GraphNode::set_bounds(float scale) {
     pin_pos = ImVec2(rect_size.x, name_size.y + line_height + border);
     for (int o = 0; o < num_output; ++o) {
         ImVec2 pin_size = out_pin_sizes[o];
-        Base_OutputPin* pin = output_pins + o;
         out_pin_rel_pos.push_back(pin_pos - ImVec2(pin_size.x + border, 0));
         pin_pos.y += (pin_size.y + pin_y_step);
     }
@@ -409,7 +348,7 @@ ImTextureID Base_GraphNode::bind_and_get_image_texture() {
 
 
 bool Base_GraphNode::can_connect_pins(Base_InputPin* in_pin, Base_OutputPin* out_pin) {
-    bool size_equal = true; // in_pin->type.arr_size == out_pin->type.arr_size;
+    bool size_equal = in_pin->type.arr_size == out_pin->type.arr_size;
     unsigned type_intersect = in_pin->type.type_flags & out_pin->type.type_flags;
 
     bool valid_type = type_intersect & GLSL_TypeMask;
@@ -499,7 +438,7 @@ Base_Pin* Base_GraphNode::get_hovered_pin(ImVec2 mouse_pos) {
         ImGui::BeginTooltip();
         std::string s = SS_Parser::type_to_string(pin->type);
         
-        ImGui::Text(s.c_str());
+        ImGui::Text("%s", s.c_str());
         ImGui::EndTooltip();
     }
     return pin;
@@ -554,14 +493,14 @@ void Base_InputPin::draw(ImDrawList* d, ImVec2 pos, float circle_off, float bord
 }
 
 void Base_InputPin::disconnect_all_from(SS_Graph* g) {
-    if (input) 
-        g->disconnect_pins(this, input);
+    if (input)
+        g->DisconnectPins(this, input);
 }
 void Base_OutputPin::disconnect_all_from(SS_Graph* g) {
     std::vector<Base_InputPin*> output_COPY(output);
 
-    for (Base_InputPin* i_pin : output_COPY) 
-        g->disconnect_pins(i_pin, this);
+    for (Base_InputPin* i_pin : output_COPY)
+        g->DisconnectPins(i_pin, this);
 }
 
 void Base_OutputPin::draw(ImDrawList* d, ImVec2 pos, float circle_off, float border) {
@@ -641,11 +580,10 @@ std::string Builtin_GraphNode::process_for_code() {
     return sss.str();
 }
 
-
-
-
-
-
+Builtin_GraphNode::~Builtin_GraphNode() {
+    glDeleteTextures(1, &nodes_rendered_texture);
+    glDeleteTextures(1, &nodes_depth_texture);
+}
 
 Constant_Node::Constant_Node(Constant_Node_Data& data, int id, ImVec2 pos) {
     _id = id;
@@ -678,6 +616,8 @@ Constant_Node::Constant_Node(Constant_Node_Data& data, int id, ImVec2 pos) {
                 break;
             case SS_Mat4:
                 _data = new float[16]; memset(_data, 0, 64);
+                break;
+            case SS_MAT:
                 break;
         }
     }
@@ -817,6 +757,10 @@ void Param_Node::update_type_from_param(GLSL_TYPE type) {
         output_pins[o].type = type;
 }
 
+Param_Node::~Param_Node()  {
+    glDeleteTextures(1, &nodes_rendered_texture);
+    glDeleteTextures(1, &nodes_depth_texture);
+}
 
 
 Boilerplate_Var_Node::Boilerplate_Var_Node(Boilerplate_Var_Data data, SS_Boilerplate_Manager* bp, int id, ImVec2 pos) {
@@ -847,6 +791,13 @@ std::string Boilerplate_Var_Node::process_for_code() {
     return "";
 }
 
+Boilerplate_Var_Node::~Boilerplate_Var_Node() {
+    if (!output_pins->type.IsMatrix() && output_pins->type.arr_size == 1) {
+        glDeleteTextures(1, &nodes_rendered_texture);
+        glDeleteTextures(1, &nodes_depth_texture);
+    }
+}
+
 
 Terminal_Node::Terminal_Node(const std::vector<Boilerplate_Var_Data>& terminal_pins, int id, ImVec2 pos) {
     _id = id;
@@ -861,8 +812,8 @@ Terminal_Node::Terminal_Node(const std::vector<Boilerplate_Var_Data>& terminal_p
         input_pins = new Base_InputPin[num_input];
     output_pins = nullptr;
 
-    for (int i = 0; i < terminal_pins.size(); ++i) {
-        auto data = terminal_pins[i];
+    for (std::vector<Boilerplate_Var_Data>::size_type i = 0u; i < terminal_pins.size(); ++i) {
+        const auto& data = terminal_pins[i];
 
         input_pins[i].type = data.type;
         input_pins[i].bInput = true;
@@ -872,12 +823,14 @@ Terminal_Node::Terminal_Node(const std::vector<Boilerplate_Var_Data>& terminal_p
     }
 }
 
-
-
+Terminal_Node::~Terminal_Node()  {
+    glDeleteTextures(1, &nodes_rendered_texture);
+    glDeleteTextures(1, &nodes_depth_texture);
+}
 
 
 std::string Constant_Node::request_output(int out_index) {
-    std::cout << "CONSTANT OUTPUT REQUEST START" << output_pins->type.is_matrix() << std::endl;
+    std::cout << "CONSTANT OUTPUT REQUEST START" << output_pins->type.IsMatrix() << std::endl;
     GLSL_TYPE t = output_pins->type;
     float* f_data = (float*)_data;
     std::stringstream sss;
@@ -913,4 +866,13 @@ std::string Constant_Node::request_output(int out_index) {
 }
 std::string Constant_Node::process_for_code() {
     return "";
+}
+
+Constant_Node::~Constant_Node() {
+    if (_data) free(_data);
+    if (!output_pins->type.IsMatrix() && output_pins->type.arr_size == 1)
+    {
+        glDeleteTextures(1, &nodes_rendered_texture);
+        glDeleteTextures(1, &nodes_depth_texture);
+    }
 }

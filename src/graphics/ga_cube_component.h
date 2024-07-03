@@ -11,7 +11,8 @@
 
 #include <string>
 #include <cstdint>
-#include "..\math\ga_mat4f.h"
+#include "ga_mat4f.h"
+#include "ga_material.h"
 
 /*
 ** Renderable basic textured cubed.
@@ -22,7 +23,7 @@ public:
 	ga_cube_component(std::string& source_vs, std::string& source_fs, class SS_Boilerplate_Manager* bp);
 	virtual ~ga_cube_component();
 
-	class ga_material* _material;
+	ga_material* _material;
 	ga_mat4f _transform;
 	uint32_t _vao;
 	uint32_t _vbos[5];

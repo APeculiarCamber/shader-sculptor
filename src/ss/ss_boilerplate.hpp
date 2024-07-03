@@ -9,7 +9,7 @@
  * 
  */
 struct Boilerplate_Var_Data {
-    Boilerplate_Var_Data(std::string name, GLSL_TYPE t, bool is_frag)
+    Boilerplate_Var_Data(const std::string& name, GLSL_TYPE t, bool is_frag)
         : _name(name), type(t), frag_only(is_frag) {}
     std::string _name;
     GLSL_TYPE type;
@@ -28,14 +28,12 @@ public:
         if (_vertex_node) free(_vertex_node);
         if (_frag_node) free(_frag_node);
     }
-    // initialize the boilerplate variables
-    virtual void init() {};
     // get the terminal vertex code
-    virtual std::string get_vert_terminal_boilerplate_code() {};
+    virtual std::string get_vert_terminal_boilerplate_code() = 0;
     // get the terminal fragment code
-    virtual std::string get_frag_terminal_boilerplate_code() {};
+    virtual std::string get_frag_terminal_boilerplate_code() = 0;
     // make a material of type which will effectively utilize the boilerplate code
-    virtual class ga_material* make_material() { return nullptr; };
+    virtual class ga_material* make_material() = 0;
     const std::string& get_vert_init_boilerplate_code();
     const std::string& get_vert_init_boilerplate_declares();
     const std::string& get_frag_init_boilerplate_code();
@@ -65,8 +63,8 @@ protected:
     std::string init_vert_declares;
     std::string init_frag_declares;
 
-    std::string default_vert_shader = "";
-    std::string default_frag_shader = "";
+    std::string default_vert_shader;
+    std::string default_frag_shader;
 
     Terminal_Node* _vertex_node = nullptr;
     Terminal_Node* _frag_node = nullptr;
@@ -79,11 +77,11 @@ protected:
 class Unlit_Boilerplate_Manager : public SS_Boilerplate_Manager {
 public:
     Unlit_Boilerplate_Manager();
-    void init() override;
+    void init();
     // Utilize pin connections to complete the shader
-    std::string get_vert_terminal_boilerplate_code();
+    std::string get_vert_terminal_boilerplate_code() override;
     // Utilize pin connections to complete the shader
-    std::string get_frag_terminal_boilerplate_code();
+    std::string get_frag_terminal_boilerplate_code() override;
     class ga_material* make_material() override;
 };
 
@@ -95,11 +93,11 @@ public:
 class PBR_Lit_Boilerplate_Manager : public SS_Boilerplate_Manager {
 public:
     PBR_Lit_Boilerplate_Manager();
-    void init() override;
+    void init();
     // Utilize pin connections to complete the shader
-    std::string get_vert_terminal_boilerplate_code();
+    std::string get_vert_terminal_boilerplate_code() override;
     // Utilize pin connections to complete the shader
-    std::string get_frag_terminal_boilerplate_code();
+    std::string get_frag_terminal_boilerplate_code() override;
     class ga_material* make_material() override;
 };
 #endif

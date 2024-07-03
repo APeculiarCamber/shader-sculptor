@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <vector>
 #include <iostream>
-#include <math.h>
-#include <chrono>
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw.h"
@@ -61,7 +59,7 @@ bool LoadTextureFromFile(const char* filename, GLuint* out_texture, int* out_wid
 SS_Graph* draw_graph_type_prompt() {
     SS_Graph* ret_graph = nullptr;
     ImGui::SetNextWindowSize(ImVec2(200, 200));
-    ImGui::Begin("GRAPH TYPE PROMPT", 0, ImGuiWindowFlags_NoResize);
+    ImGui::Begin("GRAPH TYPE PROMPT", nullptr, ImGuiWindowFlags_NoResize);
     if (ImGui::Button("UNLIT GRAPH"))
         ret_graph = new SS_Graph(new Unlit_Boilerplate_Manager());
     else if (ImGui::Button("LIT-PBR GRAPH"))
@@ -112,14 +110,11 @@ int main()
 
     // render loop
     // -----------
-    bool my_tool_active = true;
-    float my_color[4];
     char buf[2048];
-    for (int i = 0; i < 2048; ++i)
-        buf[i] = 0;
+    for (char & i : buf)
+        i = 0;
     
     SS_Graph* graph = nullptr;
-    SS_Boilerplate_Manager* bp = new PBR_Lit_Boilerplate_Manager();
 
     while (!glfwWindowShouldClose(window))
     {

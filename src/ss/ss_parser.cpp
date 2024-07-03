@@ -1,6 +1,5 @@
 
 #include "ss_parser.hpp"
-#include "..\imgui\imgui.h"
 #include "ss_node.hpp"
 #include "ss_graph.hpp"
 #include <string>
@@ -61,6 +60,7 @@ char get_vec_type_char(unsigned int type) {
         return 'i';
     else if (type & GLSL_UInt)
         return 'u';
+    return '?';
 }
 
 std::string SS_Parser::type_to_string(GLSL_TYPE type) {
@@ -237,6 +237,9 @@ GLSL_TYPE SS_Parser::constant_type_to_type(GRAPH_PARAM_GENTYPE gentype, GRAPH_PA
         case SS_Mat2: t.type_flags |= (GLSL_Vec2 | GLSL_Mat); break;
         case SS_Mat3: t.type_flags |= (GLSL_Vec3 | GLSL_Mat); break;
         case SS_Mat4: t.type_flags |= (GLSL_Vec4 | GLSL_Mat); break;
+        case SS_MAT:
+            // NOTHING
+            break;
     }
     switch (type) {
         case SS_Double: t.type_flags |= GLSL_Double; break;

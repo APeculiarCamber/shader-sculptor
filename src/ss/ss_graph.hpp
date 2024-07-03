@@ -38,13 +38,15 @@ enum GRAPH_PARAM_GENTYPE : unsigned int {
 
 struct Parameter_Data {
     SS_Graph* _graph;
-    GRAPH_PARAM_GENTYPE _gentype;
     GRAPH_PARAM_TYPE _type;
+    GRAPH_PARAM_GENTYPE _gentype;
+
+    int _id;
 
     unsigned int arr_size;
+
     char _param_name[64];
     char data_container[16 * 8];
-    int _id;
     std::vector<int> param_node_ids;
 
     Parameter_Data(GRAPH_PARAM_TYPE type, GRAPH_PARAM_GENTYPE gentype, SS_Graph* g, unsigned as, int id);
@@ -52,15 +54,15 @@ struct Parameter_Data {
     bool update_gentype(GRAPH_PARAM_GENTYPE gentype);
     bool update_type(GRAPH_PARAM_TYPE type);
     void update_name(const char* new_param_name);
-    bool update_array_size(int size);
     void add_param_node(int id);
     void remove_node_type(int id);
     void destroy_nodes(SS_Graph* g);
 
-    bool is_mat();
-    int get_len();
-    int type_to_dropbox_index();
-    int gentype_to_dropbox_index();
+    __attribute__((unused)) bool is_mat() const;
+    __attribute__((unused)) unsigned get_len() const;
+
+    int type_to_dropbox_index() const;
+    int gentype_to_dropbox_index() const;
 
     void draw(SS_Graph* graph);
 };
@@ -70,25 +72,25 @@ struct Parameter_Data {
     // CONTROLS PRACTICALLY EVERYTHING 
 class SS_Graph {
 public:
-    SS_Graph(SS_Boilerplate_Manager* bp);
+    explicit SS_Graph(SS_Boilerplate_Manager* bp);
     ~SS_Graph() { for (Parameter_Data* pd : param_datas) delete pd; }
     std::unordered_map<int, Base_GraphNode*> nodes;
     int current_id = 0;
 
-    unsigned int _main_framebuffer;
+    unsigned int _main_framebuffer{};
     
    // 0 for input change needed, 1 for no, 2 for output changed needed
    // -1 for failed
    Base_GraphNode* get_node(int id);
     bool delete_node(int id);
 
-    bool pins_connectable(Base_InputPin* in_pin, Base_OutputPin* out_pin);
-    bool check_for_dag_violation(Base_InputPin* in_pin, Base_OutputPin* out_pin);
+    static bool ArePinsConnectable(Base_InputPin* in_pin, Base_OutputPin* out_pin);
+    static bool CheckForDAGViolation(Base_InputPin* in_pin, Base_OutputPin* out_pin);
 
-    bool connect_pins(Base_InputPin* in_pin, Base_OutputPin* out_pin);
-    bool disconnect_pins(Base_InputPin* in_pin, Base_OutputPin* out_pin, bool reprop = true);
+    static bool ConnectPins(Base_InputPin* in_pin, Base_OutputPin* out_pin);
+    static bool DisconnectPins(Base_InputPin* in_pin, Base_OutputPin* out_pin, bool reprop = true);
 
-    bool disconnect_all_pins(Base_GraphNode* node);
+    static bool DisconnectAllPins(Base_GraphNode* node);
     bool disconnect_all_pins_by_id(int id);
 
     void invalidate_shaders();
@@ -98,7 +100,7 @@ public:
     bool draw_saving_window();
     bool draw_credits();
     void draw_param_panels();
-    void draw_node_context_panel();
+    void draw_node_context_panel() const;
     void draw_image_loader();
     void draw_controls();
     void draw_menu_buttons();
@@ -111,17 +113,18 @@ public:
         const std::unordered_set<Base_GraphNode*>& processed,
         std::unordered_set<Base_GraphNode*>& down_wind);
     void get_down_wind_nodes(Base_GraphNode* root, std::unordered_set<Base_GraphNode*>& down_wind);
-    void Construct_Priority_list_from_tree(Base_GraphNode* root, std::vector<Base_GraphNode*>& out);
+    [[nodiscard]] static std::vector<Base_GraphNode*> ConstructTopologicalOrder(Base_GraphNode* root);
     // construct shader code from the terminal fragment node outward
-    void Construct_Text_For_Frag(Base_GraphNode* root);
+    //void Construct_Text_For_Frag(Base_GraphNode* root);
     // construct shader code from the terminal vertex node outward
-    void Construct_Text_For_Vert(Base_GraphNode* root);
-    void generate_frag_intermed_code(std::string frag_intermed_code, Base_GraphNode* node);
+    //void Construct_Text_For_Vert(Base_GraphNode* root);
+    void GenerateShaderTextAndPropagate();
+    void SetIntermediateCodeForNode(std::string intermedCode, Base_GraphNode* node);
     
     bool _is_saving = false;
     bool _credits_up = false;
     bool _controls_open = false;
-    char save_buf[256];
+    char save_buf[256]{};
 
     // Parameters
     int param_id = 0;
@@ -132,22 +135,29 @@ public:
     ImVec2 _pos_offset = ImVec2(0, 0);
     ImVec2 _drag_pos_offset = ImVec2(0, 0);
 
-    bool _screen_dragging;
-    int focus_id;
+    bool _screen_dragging{};
+    int focus_id{};
     Base_GraphNode* drag_node = nullptr;
     Base_GraphNode* selected_node = nullptr;
     Base_Pin* drag_pin;
-    char search_buf[256];
+    char search_buf[256]{};
     SS_Node_Factory node_factory;
 
     std::vector<std::pair<unsigned int, std::string> > images;
-    char img_buf[256];
+    char img_buf[256]{};
 
     SS_Boilerplate_Manager* _bp_manager;
     std::vector<Parameter_Data*> param_datas;
 
     std::string _current_frag_code = "";
     std::string _current_vert_code = "";
+
+    void SetFinalShaderTextByConstructOrders(const std::vector<Base_GraphNode *> &vertOrder,
+                                             const std::vector<Base_GraphNode *> &fragOrder);
+
+    void PropagateIntermediateVertexCodeToNodes(const std::vector<Base_GraphNode *> &vertOrder);
+
+    void PropagateIntermediateFragmentCodeToNodes(const std::vector<Base_GraphNode *> &fragOrder);
 };
 
 #endif

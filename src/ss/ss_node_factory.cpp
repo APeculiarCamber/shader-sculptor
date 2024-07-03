@@ -1,12 +1,10 @@
 #include "ss_node_factory.hpp"
-#include "..\imgui\imgui.h"
 #include "ss_node.hpp"
 #include "ss_parser.hpp"
 #include "ss_graph.hpp"
 
 #include <vector>
 #include <fstream>
-#include <iostream>
 #include <algorithm>
 #include <string>
 
@@ -21,7 +19,7 @@ std::string string_to_lower(std::string str) {
     return str;
 }
 
-bool SS_Node_Factory::read_builtin_file(std::string file) {
+bool SS_Node_Factory::read_builtin_file(const std::string& file) {
     std::ifstream iff(file);
     if (iff.bad()) return false;
 
@@ -35,7 +33,7 @@ bool SS_Node_Factory::read_builtin_file(std::string file) {
         if (token == "out") {
             iff >> str_type >> str_name;
             GLSL_TYPE t = SS_Parser::string_to_type(str_type);
-            node_datas.back().out_vars.push_back(std::make_pair(t, str_name));
+            node_datas.back().out_vars.emplace_back(t, str_name);
             iff >> token; // token is =
             iff >> token; // token should be non-var element
         }
@@ -46,21 +44,21 @@ bool SS_Node_Factory::read_builtin_file(std::string file) {
         while (iff >> token) {
             bool is_out = token == "out";
             bool is_in = token == "in";
-            size_t end_t = token.find(";");
+            size_t end_t = token.find(';');
             if (is_out) {
                 iff >> str_type >> str_name;
-                node_datas.back().out_vars.push_back(std::make_pair(SS_Parser::string_to_type(str_type), str_name));
+                node_datas.back().out_vars.emplace_back(SS_Parser::string_to_type(str_type), str_name);
                 node_datas.back().in_liner += "out \%o";
-                node_datas.back().in_liner += ('0' + node_datas.back().out_vars.size()); // out var number
+                node_datas.back().in_liner += std::to_string(node_datas.back().out_vars.size()); // out var number
             } 
             else if (is_in) {
                 iff >> str_type >> str_name;
                 if (inputs_map.find(str_name) == inputs_map.end()) {
-                    node_datas.back().in_vars.push_back(std::make_pair(SS_Parser::string_to_type(str_type), str_name));
+                    node_datas.back().in_vars.emplace_back(SS_Parser::string_to_type(str_type), str_name);
                     inputs_map.insert(std::make_pair(str_name, node_datas.back().in_vars.size()));
                 }
                 node_datas.back().in_liner += " \%i";
-                node_datas.back().in_liner += ('0' + inputs_map[str_name]); // in var number
+                node_datas.back().in_liner += std::to_string(inputs_map[str_name]); // in var number
             } 
             else if (end_t == std::string::npos) {
                 // NON_VAR
@@ -74,10 +72,11 @@ bool SS_Node_Factory::read_builtin_file(std::string file) {
             }
         }
     }
+    return true;
 }
 
 
-const std::vector<Builtin_Node_Data>& SS_Node_Factory::get_matching_builtin_nodes(std::string query) {
+const std::vector<Builtin_Node_Data>& SS_Node_Factory::get_matching_builtin_nodes(const std::string& query) {
     if (last_q == query)
         return last_data_builtin;
 
@@ -192,16 +191,16 @@ void SS_Node_Factory::cache_last_query(const std::string query) {
 Builtin_GraphNode* SS_Node_Factory::build_builtin_node(Builtin_Node_Data& node_data, int id, ImVec2 pos, unsigned int fb) {
     Builtin_GraphNode* n = new Builtin_GraphNode(node_data, id, pos);
     std::vector<struct Parameter_Data*> nil;
-    n->generate_intermed_image();
-    // n->draw_to_intermed(fb, nil);
+    n->GenerateIntermediateResultFrameBuffers();
+    // n->CompileIntermediateCode(fb, nil);
     return n;
 }
 
 Constant_Node* SS_Node_Factory::build_constant_node(Constant_Node_Data& node_data, int id, ImVec2 pos, unsigned int fb) {
     Constant_Node* n = new Constant_Node(node_data, id, pos);
     std::vector<struct Parameter_Data*> nil;
-    n->generate_intermed_image();
-    // n->draw_to_intermed(fb, nil);
+    n->GenerateIntermediateResultFrameBuffers();
+    // n->CompileIntermediateCode(fb, nil);
     return n;
 }
 
@@ -213,13 +212,13 @@ Vector_Op_Node* SS_Node_Factory::build_vec_op_node(Vector_Op_Node_Data& node_dat
 Param_Node* SS_Node_Factory::build_param_node(Parameter_Data* param_data, int id, ImVec2 pos, unsigned int fb) {
     Param_Node* n = new Param_Node(param_data, id, pos);
     std::vector<struct Parameter_Data*> nil;
-    n->generate_intermed_image();
+    n->GenerateIntermediateResultFrameBuffers();
     return n;
 }
 
 Boilerplate_Var_Node* SS_Node_Factory::build_boilerplate_var_node(Boilerplate_Var_Data& data, SS_Boilerplate_Manager* bm, int id, ImVec2 pos, unsigned int fb) {
     Boilerplate_Var_Node* n = new Boilerplate_Var_Node(data, bm, id, pos);
     std::vector<struct Parameter_Data*> nil;
-    n->generate_intermed_image();
+    n->GenerateIntermediateResultFrameBuffers();
     return n;
 }

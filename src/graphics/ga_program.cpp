@@ -15,6 +15,7 @@
 #include "../math/ga_vec3f.h"
 #include "../math/ga_vec2f.h"
 #include "../math/ga_mat3f.h"
+#include "../math/ga_mat2f.h"
 #include <iostream>
 #include <cassert>
 
@@ -34,6 +35,10 @@ void ga_uniform::set(const ga_vec3f& vec)
 void ga_uniform::set(const ga_vec4f& vec)
 {
 	glUniform4fv(_location, 1, vec.axes);
+}
+
+void ga_uniform::set(const struct ga_mat2f& mat) {
+    glUniformMatrix2fv(_location, 1, GL_TRUE, (const GLfloat*)mat.data);
 }
 
 void ga_uniform::set(const ga_mat3f& mat)
@@ -56,7 +61,7 @@ void ga_uniform::set(const ga_texture& tex, uint32_t unit)
 	glBindTexture(GL_TEXTURE_2D, tex._handle);
 	glUniform1i(_location, unit);
 }
-void ga_uniform::set(unsigned int* tex_id, uint32_t unit) {
+void ga_uniform::set(const unsigned int* tex_id, uint32_t unit) {
 	glActiveTexture(GL_TEXTURE0 + unit);
 	glBindTexture(GL_TEXTURE_2D, *tex_id);
 	glUniform1i(_location, unit);

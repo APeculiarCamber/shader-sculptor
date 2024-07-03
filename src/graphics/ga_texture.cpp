@@ -9,8 +9,7 @@
 
 #include <iostream>
 #include "ga_texture.h"
-
-#include "..\stb_image.h"
+#include "stb_image.h"
 #include <string>
 
 ga_texture::ga_texture()

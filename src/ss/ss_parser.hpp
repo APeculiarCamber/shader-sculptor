@@ -1,7 +1,7 @@
 #ifndef SS_PARSER
 #define SS_PARSER
 
-#include "..\imgui\imgui.h"
+#include "imgui/imgui.h"
 #include <string>
 
 struct GLSL_TYPE;

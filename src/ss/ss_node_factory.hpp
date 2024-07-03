@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-#include "..\imgui\imgui.h"
+#include "imgui/imgui.h"
 
 // forward declares
 struct GLSL_TYPE;
@@ -46,8 +46,8 @@ enum VECTOR_OPS : unsigned int {
 
 struct Vector_Op_Node_Data {
     Vector_Op_Node_Data(const char* str, VECTOR_OPS op) : _op(op), _name(str) {}
-    std::string _name;
     VECTOR_OPS _op;
+    std::string _name;
 };
 
 class SS_Node_Factory {
@@ -57,7 +57,7 @@ public:
     // ALLOWS reading from files to create builtin nodes and vector nodes and type nodes?
     // ALLOWS reading from custom file to create custom nodes
     // ALLOWS a request to get unique, state-agnostic ID for any given node, likely a name...
-    bool read_builtin_file(std::string file);
+    bool read_builtin_file(const std::string& file);
 
 
     // caching for queries
@@ -69,7 +69,7 @@ public:
     std::vector<Boilerplate_Var_Data> last_data_BP;
 
     // Search functions, caches and returns search results
-    const std::vector<Builtin_Node_Data>& get_matching_builtin_nodes(std::string query);
+    const std::vector<Builtin_Node_Data>& get_matching_builtin_nodes(const std::string& query);
     const std::vector<Constant_Node_Data>& get_matching_constant_nodes(std::string query);
     const std::vector<Vector_Op_Node_Data>& get_matching_vector_nodes(std::string query);
     std::vector<Parameter_Data*>& get_matching_param_nodes(std::string query, std::vector<Parameter_Data*>& data_in);
@@ -80,7 +80,6 @@ public:
     Builtin_GraphNode* build_builtin_node(Builtin_Node_Data& node_data, int id, ImVec2 pos, unsigned int fb);
     Constant_Node* build_constant_node(Constant_Node_Data& node_data, int id, ImVec2 pos, unsigned int fb);
     Vector_Op_Node* build_vec_op_node(Vector_Op_Node_Data& node_data, int id, ImVec2 pos, unsigned int fb);
-    Vector_Op_Node* build_vec_op_node(Boilerplate_Var_Data& node_data, int id, ImVec2 pos, unsigned int fb);
     Param_Node* build_param_node(Parameter_Data* param_data, int id, ImVec2 pos, unsigned int fb);
     Boilerplate_Var_Node* build_boilerplate_var_node(Boilerplate_Var_Data& data, SS_Boilerplate_Manager* bm, int id, ImVec2 pos, unsigned int fb);
 };

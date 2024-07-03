@@ -27,11 +27,12 @@ public:
 	void set(const struct ga_vec2f& vec);
 	void set(const struct ga_vec3f& vec);
 	void set(const struct ga_vec4f& vec);
-	void set (const struct ga_mat3f& vec);
+    void set (const struct ga_mat2f& vec);
+    void set (const struct ga_mat3f& vec);
 	void set(const struct ga_mat4f& mat);
 	void set(const struct ga_mat4f* mats, uint32_t count);
 	void set(const class ga_texture& tex, uint32_t unit);
-	void set(unsigned int* tex_id, uint32_t unit);
+	void set(const unsigned int* tex_id, uint32_t unit);
 	int32_t get() { return _location; }
 private:
 	ga_uniform(int32_t location);

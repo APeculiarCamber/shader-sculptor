@@ -1,9 +1,9 @@
 #include "ss_boilerplate.hpp"
-#include "..\graphics\ga_material.h"
+#include "ga_material.h"
 
 #include <iostream>
 
-SS_Boilerplate_Manager::SS_Boilerplate_Manager() { }
+SS_Boilerplate_Manager::SS_Boilerplate_Manager() = default;
 
 const std::string& SS_Boilerplate_Manager::get_vert_init_boilerplate_code() {
     return init_vert_code;
@@ -19,7 +19,7 @@ const std::string& SS_Boilerplate_Manager::get_frag_init_boilerplate_declares() 
 }
 std::string SS_Boilerplate_Manager::get_output_code_for_var(std::string& var_name) const {
     auto it = var_name_to_output_code.find(var_name);
-    if (it == var_name_to_output_code.end()) return std::string();
+    if (it == var_name_to_output_code.end()) return {};
     return it->second;
 }
 
@@ -177,7 +177,6 @@ void Unlit_Boilerplate_Manager::init() {
         \tfloat v = dot(f_ViewNormal, vec3(1, 0, 0));
         \tgl_FragColor = vec4(v,v,v,1);
     })";
-    std::cout << "END INIT" << std::endl;
 }
 
 std::string Unlit_Boilerplate_Manager::get_vert_terminal_boilerplate_code() {
@@ -190,7 +189,6 @@ std::string Unlit_Boilerplate_Manager::get_frag_terminal_boilerplate_code() {
         n = "vec4(" + _frag_node->input_pins->input->get_pin_output_name() + ", 1)";
     else
         n = "vec4(1, 1, 1, 1)";
-    std::cout << "finish make str" << std::endl;
 
     return "\tgl_FragColor = " + n + ";";
 }
