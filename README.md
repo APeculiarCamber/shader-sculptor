@@ -23,7 +23,7 @@ The slides for the presentation that accompanied this project can be found [here
 
 # Special Thanks to:
 
-### Professor Eric Ameres, mentor for project
+### Professor Eric Ameres, my mentor for this project
 
 ### Omar Cornut, Lead for Dear IMGUI
 
