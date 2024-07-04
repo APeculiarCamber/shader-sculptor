@@ -1,10 +1,9 @@
-//
-// Created by idemaj on 7/3/24.
-//
-
 #ifndef SHADER_SCUPLTOR_SS_NODE_TYPES_H
 #define SHADER_SCUPLTOR_SS_NODE_TYPES_H
 
+/**
+ * Types of SHADER SCULPTOR nodes
+ */
 enum NODE_TYPE {
     NODE_DEFAULT,
     NODE_BUILTIN,
@@ -17,7 +16,9 @@ enum NODE_TYPE {
     NODE_BOILER_VAR
 };
 
-// Gen are used to specify a generic size, The other GLSL_Vecn/Scalar is what is used in propogation and building...
+/**
+ * Gen are used to specify a generic size, The other GLSL_Vecn/Scalar is what is used in propogation and building...
+ */
 enum GRAPH_PARAM_TYPE : unsigned int {
     SS_Float,
     SS_Double,
@@ -26,6 +27,10 @@ enum GRAPH_PARAM_TYPE : unsigned int {
     SS_TextureCube
 };
 
+/**
+ * Gentypes is GLSL are used to specify generic size.
+ * We allow this useful generalization but need to restrict once the (size)type is specified.
+ */
 enum GRAPH_PARAM_GENTYPE : unsigned int {
     SS_Scalar,
     SS_Vec2,
@@ -38,6 +43,9 @@ enum GRAPH_PARAM_GENTYPE : unsigned int {
     SS_VEC = SS_Vec2 | SS_Vec3 | SS_Vec4
 };
 
+/**
+ * Vector Make and Break operations, for use with Nodes
+ */
 enum VECTOR_OPS : unsigned int {
     VEC_BREAK2_OP,
     VEC_BREAK3_OP,
@@ -47,7 +55,10 @@ enum VECTOR_OPS : unsigned int {
     VEC_MAKE4_OP
 };
 
-// Gen are used to specify a generic size, The other GLSL_Vecn/Scalar is what is used in propogation and building...
+/**
+ * Type-mask for both type and gentype of a variable or output (or input)
+ * Also specifies if array and if OUT-var. Not used in current build.
+ */
 enum GLSL_TYPE_ENUM {
     GLSL_Bool   = 1,
     GLSL_Int   = 2,
@@ -82,7 +93,13 @@ enum GLSL_TYPE_ENUM {
 };
 
 
+
+
 typedef unsigned int GLSL_TYPE_ENUM_BITS;
+/**
+ * Specifies a variable type, can be partially or fully generic (as for GENTYPES).
+ * User classes of this must manage restricting types as the user makes specific decisions.
+ */
 struct GLSL_TYPE {
     GLSL_TYPE() = default;
     GLSL_TYPE(unsigned int flags, unsigned int size) : type_flags(flags), arr_size(size) {}

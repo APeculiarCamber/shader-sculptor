@@ -151,7 +151,7 @@ public:
 };
 
 class Param_Node : public Base_GraphNode {
-public: // TODO: scoping
+public: // TODO: scoping & making members protected, use methods!!!!
     int _paramID;
     Param_Node(Parameter_Data* data, int id, ImVec2 pos);
     ~Param_Node() override;

@@ -1,19 +1,11 @@
 #ifndef SS_GRAPH
 #define SS_GRAPH
 
-#include <iostream>
-#include <vector>
-#include <unordered_map>
-#include <stack>
-#include <queue>
 
-#include "../imgui/imgui.h"
+#include "imgui/imgui.h"
 #include "ss_data.h"
 #include "ss_node.hpp"
-#include "ss_parser.hpp"
-#include "ss_boilerplate.hpp"
-#include "ss_node_factory.hpp"
-#include "ss_pins.h"
+#include <unordered_map>
 
 // MAIN MANAGEMENT CLASS OF THE APPLICATION
 class SS_Graph : public ParamDataGraphHook {
@@ -83,7 +75,6 @@ public: // TODO: scope this
     // Parameters
     int param_id = 0;
     void add_parameter();
-    void remove_parameter(int ind);
 
     ImVec2 _pos_offset = ImVec2(0, 0);
     ImVec2 _drag_pos_offset = ImVec2(0, 0);

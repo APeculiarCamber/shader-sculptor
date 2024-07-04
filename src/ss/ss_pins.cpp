@@ -3,6 +3,7 @@
 //
 
 #include <algorithm>
+#include <queue>
 #include "ss_pins.h"
 #include "ss_parser.hpp"
 #include "ss_graph.hpp"

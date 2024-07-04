@@ -1,9 +1,12 @@
 #include "ss_graph.hpp"
 #include "stb_image.h"
 #include "ss_pins.h"
+#include "ss_parser.hpp"
+#include "ss_node_factory.hpp"
+#include "ss_boilerplate.hpp"
 #include <fstream>
 #include <algorithm>
-#include <glad/glad.h>
+#include <stack>
 
 /**
  * @brief Construct a new ss graph::ss graph object
