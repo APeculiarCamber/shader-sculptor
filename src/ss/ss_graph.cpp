@@ -43,7 +43,7 @@ bool SS_Graph::delete_node(int id) {
     if (it->second.get() == drag_node) { drag_node = nullptr; drag_pin = nullptr; }
 
     Base_GraphNode* n = it->second.get();
-    DisconnectAllPins(n);
+    n->DisconnectAllPins();
     nodes.erase(it);
 
     // If it is a parameter node, we need to remove it from the parameter->node map
@@ -59,93 +59,11 @@ bool SS_Graph::delete_node(int id) {
     return true;
 }
 
-
-// returns TRUE if DAG violation
-bool SS_Graph::CheckForDAGViolation(Base_InputPin* in_pin, Base_OutputPin* out_pin) {
-    std::queue<Base_GraphNode*> n_queue;
-    Base_GraphNode* n;
-    n_queue.push(in_pin->owner);
-    while (!n_queue.empty()) {
-        n = n_queue.front();
-        n_queue.pop();
-        if (n == out_pin->owner) return true;
-        for (int p = 0; p < n->num_output; ++p)
-            for (auto & o : n->output_pins[p].output)
-                n_queue.push(o->owner);
-    }
-    return false;
-}
-
-// 0 for input change needed, 1 for no change needed, 2 for output changed needed
-// -1 for failed
-bool SS_Graph::ArePinsConnectable(Base_InputPin* in_pin, Base_OutputPin* out_pin) {
-    bool in_accepeted = in_pin->owner->can_connect_pins(in_pin, out_pin);
-    bool out_accepeted = in_pin->owner->can_connect_pins(in_pin, out_pin);
-    bool dag_maintained = !CheckForDAGViolation(in_pin, out_pin);
-    return in_accepeted && out_accepeted && dag_maintained;
-}
-
-bool SS_Graph::ConnectPins(Base_InputPin* in_pin, Base_OutputPin* out_pin) {
-    if (!ArePinsConnectable(in_pin, out_pin)) return false;
-
-    if (in_pin->input)
-        DisconnectPins(in_pin, in_pin->input);
-
-    GLSL_TYPE intersect_type = in_pin->type.IntersectCopy(out_pin->type);
-    in_pin->owner->propogate_gentype_in_subgraph(in_pin, intersect_type.type_flags & GLSL_LenMask);
-    out_pin->owner->propogate_gentype_in_subgraph(out_pin, intersect_type.type_flags & GLSL_LenMask);
-    in_pin->owner->propogate_build_dirty();
-
-    in_pin->input = out_pin;
-    out_pin->output.push_back(in_pin);
-    in_pin->owner->inform_of_connect(in_pin, out_pin);
-    out_pin->owner->inform_of_connect(in_pin, out_pin);
-    
-    return true;
-}
-
-
-bool SS_Graph::DisconnectPins(Base_InputPin* in_pin, Base_OutputPin* out_pin, bool reprop) {
-    in_pin->input = nullptr;
-    auto ptr = std::find(out_pin->output.begin(), out_pin->output.end(), in_pin);
-    out_pin->output.erase(ptr);
-
-    if (reprop) {
-        // INPUT PIN PROPOGATION
-        if (in_pin->type.type_flags & GLSL_GenType) {
-            unsigned int new_in_type = in_pin->owner->get_most_restrictive_gentype_in_subgraph(in_pin);
-            in_pin->owner->propogate_gentype_in_subgraph(in_pin, new_in_type);
-        }
-        // OUTPUT PIN PROPOGATION
-        if (out_pin->type.type_flags & GLSL_GenType) {
-            unsigned int new_out_type = out_pin->owner->get_most_restrictive_gentype_in_subgraph(out_pin);
-            out_pin->owner->propogate_gentype_in_subgraph(out_pin, new_out_type);
-        }
-    }
-    in_pin->owner->propogate_build_dirty();
-    return true;
-}
-
-bool SS_Graph::DisconnectAllPins(Base_GraphNode* node) {
-    for (int i = 0; i < node->num_input; ++i) {
-        if (node->input_pins[i].input)
-            DisconnectPins(&node->input_pins[i], node->input_pins[i].input);
-    }
-
-    for (int o = 0; o < node->num_output; ++o) {
-        Base_OutputPin* o_pin = &node->output_pins[o];
-        std::vector<Base_InputPin*> output_COPY(node->output_pins[o].output);
-        for (Base_InputPin* i_pin : output_COPY) {
-            DisconnectPins(i_pin, o_pin);
-        }
-    }
-    return true;
-}
-
 bool SS_Graph::disconnect_all_pins_by_id(int id) {
     auto it = nodes.find(id);
     if (it == nodes.end()) return false;
-    return DisconnectAllPins(it->second.get());
+    it->second->DisconnectAllPins();
+    return true;
 }
 
 void SS_Graph::invalidate_shaders() {
@@ -345,7 +263,7 @@ void SS_Graph::handle_input() {
     }
     if (ImGui::IsKeyPressed(ImGuiKey_Delete) && hover_id != -1) {
         if (hover_pin && hover_pin->has_connections()) {
-            hover_pin->disconnect_all_from(this);
+            hover_pin->disconnect_all_from(true);
         } else {
             delete_node(hover_id);
         }
@@ -387,9 +305,9 @@ void SS_Graph::handle_input() {
 
         if (drag_pin && hover_pin) {
             if (drag_pin->bInput && !hover_pin->bInput)
-                ConnectPins((Base_InputPin *) drag_pin, (Base_OutputPin *) hover_pin);
+                PinOps::ConnectPins((Base_InputPin *) drag_pin, (Base_OutputPin *) hover_pin);
             else if (!drag_pin->bInput && hover_pin->bInput)
-                ConnectPins((Base_InputPin *) hover_pin, (Base_OutputPin *) drag_pin);
+                PinOps::ConnectPins((Base_InputPin *) hover_pin, (Base_OutputPin *) drag_pin);
         }
         drag_node = nullptr;
         drag_pin = nullptr;

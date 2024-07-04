@@ -61,6 +61,7 @@ public:
 
     bool can_be_deleted() { return get_node_type() != NODE_TERMINAL; };
 
+    void DisconnectAllPins();
 
     // MEMBER VARIABLES
     int _id;

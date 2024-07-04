@@ -434,6 +434,22 @@ bool Base_GraphNode::is_display_button_hovered_over(ImVec2 m) {
     return (m.x > minn.x && m.y > minn.y) && (m.x < maxx.x && m.y < maxx.y);
 }
 
+void Base_GraphNode::DisconnectAllPins() {
+    auto* node = this;
+    for (int i = 0; i < node->num_input; ++i) {
+        if (node->input_pins[i].input)
+            PinOps::DisconnectPins(&node->input_pins[i], node->input_pins[i].input, true);
+    }
+
+    for (int o = 0; o < node->num_output; ++o) {
+        Base_OutputPin* o_pin = &node->output_pins[o];
+        std::vector<Base_InputPin*> output_COPY(node->output_pins[o].output);
+        for (Base_InputPin* i_pin : output_COPY) {
+            PinOps::DisconnectPins(i_pin, o_pin, true);
+        }
+    }
+}
+
 
 std::string Builtin_GraphNode::request_output(int out_index) {
     return pin_parse_out_names[out_index];

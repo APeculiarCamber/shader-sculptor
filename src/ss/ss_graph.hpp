@@ -31,14 +31,6 @@ public: // TODO: scope this
    Base_GraphNode* get_node(int id);
     bool delete_node(int id);
 
-    static bool ArePinsConnectable(Base_InputPin* in_pin, Base_OutputPin* out_pin);
-    static bool CheckForDAGViolation(Base_InputPin* in_pin, Base_OutputPin* out_pin);
-
-    // TODO: please move these to ss_pins
-    static bool ConnectPins(Base_InputPin* in_pin, Base_OutputPin* out_pin);
-    static bool DisconnectPins(Base_InputPin* in_pin, Base_OutputPin* out_pin, bool reprop = true);
-    // TODO: please move this to ss_node
-    static bool DisconnectAllPins(Base_GraphNode* node);
     bool disconnect_all_pins_by_id(int id);
 
     void invalidate_shaders();

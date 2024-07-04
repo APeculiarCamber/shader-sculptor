@@ -15,9 +15,8 @@
  * ********************************************************************************
  * ********************************************************************************/
 
-struct Base_Pin;
+// TODO: you could eliminate this with a 'pin-holder class' which would be a maybe smart abstraction???
 class Base_GraphNode;
-class SS_Graph;
 
 // BASE CLASS FOR NODE PINS
 struct Base_Pin {
@@ -32,7 +31,7 @@ struct Base_Pin {
     virtual ImVec2 get_pin_pos(float circle_off, float border, float* radius) { return {0, 0}; };
 
     virtual bool has_connections() { return false; }
-    virtual void disconnect_all_from(SS_Graph* g) {};
+    virtual void disconnect_all_from(bool reprop) {};
 
     virtual ~Base_Pin() = default;
 };
@@ -46,7 +45,7 @@ struct Base_InputPin : Base_Pin {
     void draw(ImDrawList* drawList, ImVec2 pos, float circle_off, float border) override;
     ImVec2 get_pin_pos(float circle_off, float border, float* radius) override;
     bool has_connections() override { return input; }
-    void disconnect_all_from(SS_Graph* g) override;
+    void disconnect_all_from(bool reprop) override;
 };
 
 // OUTPUT PIN CLASS
@@ -56,7 +55,16 @@ struct Base_OutputPin : Base_Pin {
     void draw(ImDrawList* drawList, ImVec2 pos, float circle_off, float border) override;
     ImVec2 get_pin_pos(float circle_off, float border, float* radius) override;
     bool has_connections() override { return not output.empty(); }
-    void disconnect_all_from(SS_Graph* g) override;
+    void disconnect_all_from(bool reprop) override;
 };
+
+
+namespace PinOps {
+    bool CheckForDAGViolation(Base_InputPin *in_pin, Base_OutputPin *out_pin);
+    bool ArePinsConnectable(Base_InputPin* in_pin, Base_OutputPin* out_pin);
+    bool ConnectPins(Base_InputPin* in_pin, Base_OutputPin* out_pin);
+    bool DisconnectPins(Base_InputPin* in_pin, Base_OutputPin* out_pin, bool reprop);
+}
+
 
 #endif //SHADER_SCUPLTOR_SS_PINS_H
