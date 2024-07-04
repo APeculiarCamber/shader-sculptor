@@ -25,7 +25,9 @@ SS_Graph::SS_Graph(SS_Boilerplate_Manager* bp) {
     search_buf[0] = 0;
     img_buf[0] = 0;
 
-    node_factory.read_builtin_file("data/builtin_glsl_funcs.txt");
+    // Static load of node factory data, NOTE: ASSUMES GRAPH SINGLETON!
+    assert(SS_Node_Factory::InitReadBuiltinFile("data/builtin_glsl_funcs.txt"));
+    assert(SS_Node_Factory::InitReadInBoilerplateParams(bp->GetUsableVariables()));
 }
 
 Base_GraphNode* SS_Graph::get_node(int id) {
@@ -169,36 +171,36 @@ void SS_Graph::handle_input() {
         // SEARCH BAR
         ImGui::InputText("Search", search_buf, 256);
         // BUILTIN
-        auto built_node_data_list = node_factory.get_matching_builtin_nodes(std::string(search_buf));
+        auto built_node_data_list = SS_Node_Factory::GetMatchingBuiltinNodes(std::string(search_buf));
         if (not built_node_data_list.empty()) ImGui::Text("Builtin:");
         for (auto nd : built_node_data_list) {
             if (ImGui::Button(nd._name.c_str())) {
-                Builtin_GraphNode* n = node_factory.build_builtin_node(nd, ++current_id, 
-                add_pos - (_pos_offset + _drag_pos_offset), _main_framebuffer);
+                Builtin_GraphNode* n = SS_Node_Factory::BuildBuiltinNode(nd, ++current_id,
+                                                                     add_pos - (_pos_offset + _drag_pos_offset));
                 nodes.insert(std::make_pair(current_id, (Base_GraphNode*)n));
                 ImGui::CloseCurrentPopup(); ImGui::EndPopup();
                 return;
             }
         }
         // CONSTANT
-        auto const_node_data_list = node_factory.get_matching_constant_nodes(std::string(search_buf));
+        auto const_node_data_list = SS_Node_Factory::GetMatchingConstantNodes(std::string(search_buf));
         if (not const_node_data_list.empty()) ImGui::Text("CONSTANT:");
         for (auto nd : const_node_data_list) {
             if (ImGui::Button(nd.m_name.c_str())) {
-                Constant_Node* n = node_factory.build_constant_node(nd, ++current_id, 
-                add_pos - (_pos_offset + _drag_pos_offset), _main_framebuffer);
+                Constant_Node* n = SS_Node_Factory::BuildConstantNode(nd, ++current_id,
+                                                                  add_pos - (_pos_offset + _drag_pos_offset));
                 nodes.insert(std::make_pair(current_id, (Base_GraphNode*)n));
                 ImGui::CloseCurrentPopup(); ImGui::EndPopup();
                 return;
             }
         }
         // VECTOR OPS
-        auto vec_node_data_list = node_factory.get_matching_vector_nodes(std::string(search_buf));
+        auto vec_node_data_list = SS_Node_Factory::GetMatchingVectorNodes(std::string(search_buf));
         if (not vec_node_data_list.empty()) ImGui::Text("VECTOR OPS:");
         for (auto nd : vec_node_data_list) {
             if (ImGui::Button(nd.m_name.c_str())) {
-                Vector_Op_Node* n = node_factory.build_vec_op_node(nd, ++current_id, 
-                add_pos - (_pos_offset + _drag_pos_offset), _main_framebuffer);
+                Vector_Op_Node* n = SS_Node_Factory::BuildVecOpNode(nd, ++current_id,
+                                                                add_pos - (_pos_offset + _drag_pos_offset));
                 nodes.insert(std::make_pair(current_id, (Base_GraphNode*)n));
                 ImGui::CloseCurrentPopup(); ImGui::EndPopup();
                 return;
@@ -206,14 +208,14 @@ void SS_Graph::handle_input() {
         }
         // PARAMS
         std::vector<Parameter_Data*> param_node_data_list =
-                SS_Node_Factory::get_matching_param_nodes(std::string(search_buf), param_datas);
+                SS_Node_Factory::GetMatchingParamNodes(std::string(search_buf), param_datas);
         if (not param_node_data_list.empty()) ImGui::Text("PARAMETERS:");
 
         for (Parameter_Data* nd : param_node_data_list) {
             if (ImGui::Button(nd->GetName() + 2)) {
                 // Add the node
-                Param_Node* n = node_factory.build_param_node(nd, ++current_id, 
-                add_pos - (_pos_offset + _drag_pos_offset), _main_framebuffer);
+                Param_Node* n = SS_Node_Factory::BuildParamNode(nd, ++current_id,
+                                                            add_pos - (_pos_offset + _drag_pos_offset));
                 // Update collections
                 nodes.insert(std::make_pair(current_id, n));
                 if (paramIDsToNodeIDs.find(nd->GetID()) == paramIDsToNodeIDs.end())
@@ -224,13 +226,13 @@ void SS_Graph::handle_input() {
             }
         }
         // BOILERPLATE
-         auto bp_node_data_list = node_factory.get_matching_boilerplate_nodes(std::string(search_buf), _bp_manager);
+         auto bp_node_data_list = SS_Node_Factory::GetMatchingBoilerplateNodes(std::string(search_buf));
         if (not bp_node_data_list.empty()) ImGui::Text("DEFAULTS:");
         for (auto nd : bp_node_data_list) {
             if (ImGui::Button(nd._name.c_str())) {
-                Boilerplate_Var_Node* n = node_factory.build_boilerplate_var_node(
-                    nd, _bp_manager, ++current_id, 
-                    add_pos - (_pos_offset + _drag_pos_offset), _main_framebuffer);
+                Boilerplate_Var_Node* n = SS_Node_Factory::BuildBoilerplateVarNode(
+                        nd, _bp_manager, ++current_id,
+                        add_pos - (_pos_offset + _drag_pos_offset));
                 nodes.insert(std::make_pair(current_id, (Base_GraphNode*)n));
                 ImGui::CloseCurrentPopup(); ImGui::EndPopup();
                 return;

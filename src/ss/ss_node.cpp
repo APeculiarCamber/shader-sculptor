@@ -80,7 +80,7 @@ void Base_GraphNode::propogate_gentype_in_subgraph(Base_Pin* start_pin,
     for (int i = 0; i < num_input; ++i) {
         if (!is_gentype(input_pins[i].type.type_flags)) continue;
 
-        // intersect generic part of pin with restrictive
+        // Intersect generic part of pin with restrictive
         unsigned int gen_len_intersect = len_type & GLSL_LenMask;
         input_pins[i].type.type_flags &= (~GLSL_LenMask); // clear len mask
         input_pins[i].type.type_flags |= gen_len_intersect; // set len mask
@@ -93,7 +93,7 @@ void Base_GraphNode::propogate_gentype_in_subgraph(Base_Pin* start_pin,
     for (int o = 0; o < num_output; ++o) {
         if (!is_gentype(output_pins[o].type.type_flags)) continue;
 
-        // intersect generic part of pin with restrictive
+        // Intersect generic part of pin with restrictive
         unsigned int gen_len_intersect = len_type & GLSL_LenMask;
         output_pins[o].type.type_flags &= ~GLSL_LenMask; // clear len mask
         output_pins[o].type.type_flags |= gen_len_intersect; // set len mask
@@ -120,7 +120,7 @@ unsigned int Base_GraphNode::get_most_restrictive_gentype_in_subgraph(Base_Pin* 
     if (!is_gentype(start_pin->type.type_flags)) return start_pin->type.type_flags & GLSL_LenMask;
 
     std::unordered_set<int> processed_ids;
-    // intersect only the len-not-gen-type portion of the pin type
+    // Intersect only the len-not-gen-type portion of the pin type
     unsigned int start_type = (start_pin->type.type_flags & GLSL_GenType) >> GLSL_LenToGenPush;
     unsigned int restrict_type = get_most_restrictive_gentype_in_subgraph(start_pin, processed_ids);
     restrict_type &= start_type;
@@ -146,7 +146,7 @@ unsigned int Base_GraphNode::get_most_restrictive_gentype_in_subgraph(Base_Pin* 
         if (!o_pin) continue; // output pin exists
 
         unsigned int res_type = get_most_restrictive_gentype_in_subgraph(o_pin, processed_ids);
-        most_res_gen_type &= res_type; // intersect only for len, non-gen
+        most_res_gen_type &= res_type; // Intersect only for len, non-gen
     } 
     // OUTPUT
     for (int o = 0; o < num_output; ++o) {
@@ -156,7 +156,7 @@ unsigned int Base_GraphNode::get_most_restrictive_gentype_in_subgraph(Base_Pin* 
             if (!i_pin) continue; // pin exists
 
             unsigned int res_type = get_most_restrictive_gentype_in_subgraph(i_pin, processed_ids);
-            most_res_gen_type &= res_type; // intersect only for len, non-gen
+            most_res_gen_type &= res_type; // Intersect only for len, non-gen
         }
     }
     return most_res_gen_type;

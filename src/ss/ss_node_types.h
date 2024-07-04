@@ -82,15 +82,14 @@ enum GLSL_TYPE_ENUM {
 };
 
 
-
+typedef unsigned int GLSL_TYPE_ENUM_BITS;
 struct GLSL_TYPE {
     GLSL_TYPE() = default;
     GLSL_TYPE(unsigned int flags, unsigned int size) : type_flags(flags), arr_size(size) {}
-    unsigned int type_flags{};
+    GLSL_TYPE_ENUM_BITS type_flags{};
     unsigned int arr_size{};
 
-    GLSL_TYPE intersect(const GLSL_TYPE& other) {
-        // intersect with in mind : gentype, genvec, overrides on single, array size,y if array
+    GLSL_TYPE Intersect(const GLSL_TYPE& other) {
         type_flags &= other.type_flags;
         arr_size = 1;
         return *this;

@@ -93,7 +93,6 @@ public: // TODO: scope this
     Base_GraphNode* selected_node = nullptr;
     Base_Pin* drag_pin;
     char search_buf[256]{};
-    SS_Node_Factory node_factory;
 
     std::vector<std::pair<unsigned int, std::string> > images;
     char img_buf[256]{};
