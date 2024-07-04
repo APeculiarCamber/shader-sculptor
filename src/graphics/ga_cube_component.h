@@ -11,6 +11,7 @@
 
 #include <string>
 #include <cstdint>
+#include <memory>
 #include "ga_mat4f.h"
 #include "ga_material.h"
 
@@ -23,7 +24,7 @@ public:
 	ga_cube_component(std::string& source_vs, std::string& source_fs, class SS_Boilerplate_Manager* bp);
 	virtual ~ga_cube_component();
 
-	ga_material* _material;
+	std::unique_ptr<ga_material> _material;
 	ga_mat4f _transform;
 	uint32_t _vao;
 	uint32_t _vbos[5];

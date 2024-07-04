@@ -1,8 +1,5 @@
 
 #include "ss_parser.hpp"
-#include "ss_node.hpp"
-#include "ss_graph.hpp"
-#include <string>
 
 /*Scalars
 The basic non-vector types are:
@@ -124,29 +121,29 @@ Samplers
     sampler2D, sampler3D, samplerCube
 */
 unsigned type_char_to_flag(char t) {
-    t = tolower(t);
+    t = (char)std::tolower(t);
     switch (t) {
         case 'd': return GLSL_Double;
         case 'f': return GLSL_Float;
         case 'b': return GLSL_Bool;
         case 'u': return GLSL_UInt;
         case 'i': return GLSL_Int;
+        default: return GLSL_Float;
     }
-    return GLSL_Float;
 }
 unsigned vec_len_char_to_flag(char t) {
-    t = tolower(t);
+    t = (char)std::tolower(t);
     switch (t) {
         case 'n': return GLSL_GenVec | GLSL_VecN;
         case '2': return GLSL_Vec2;
         case '3': return GLSL_Vec3;
         case '4': return GLSL_Vec4;
         case '1': return GLSL_Scalar;
+        default: return GLSL_GenVec;
     }
-    return GLSL_GenVec;
 }
 
-GLSL_TYPE SS_Parser::string_to_type(std::string type_str, bool out) {
+GLSL_TYPE SS_Parser::string_to_type(std::string type_str) {
     size_t v_i;
     GLSL_TYPE type;
     type.type_flags = 0;
@@ -330,6 +327,7 @@ std::string SS_Parser::convert_output_to_color_str(std::string pin_name, GLSL_TY
         if (type.type_flags & GLSL_Vec4)
             return "mix(vec4(0,0,0,1), vec4(1,1,1,1), " + pin_name + ")";
     } else if (GLSL_Double & type.type_flags) {
+        if (type.type_flags & GLSL_Scalar)
             return "vec4(float(" + pin_name + "), float("  + pin_name + "), float("  + pin_name + "), 1)";
         if (type.type_flags & GLSL_Vec2)
             return "vec4(float(" + pin_name + ".x), float("  + pin_name + ".y), 0, 1)";
@@ -339,14 +337,4 @@ std::string SS_Parser::convert_output_to_color_str(std::string pin_name, GLSL_TY
             return "vec4(float(" + pin_name + ".x), float(" + pin_name + ".y), float(" +  pin_name + ".z), " + "1)";
     }
     return "vec4(1, 1, 1, 1)";
-}
-
-
-std::string SS_Parser::serialize_graph(const SS_Graph& graph) {
-    // TODO   
-    return "";
-}
-
-void SS_Parser::deserialize_graph(SS_Graph& graph, std::string& str) {
-    // TODO
 }

@@ -3,11 +3,14 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 #include "imgui/imgui.h"
+#include "ss_node_types.h"
+#include "ss_data.h"
 
 // forward declares
-struct GLSL_TYPE;
+// TODO: these MIGHT be able to be included, the circular wasn't real
 class Builtin_GraphNode;
 class Constant_Node;
 class Vector_Op_Node;
@@ -15,40 +18,6 @@ class Boilerplate_Var_Node;
 class Param_Node;
 class SS_Boilerplate_Manager;
 
-enum GRAPH_PARAM_GENTYPE : unsigned int;
-enum GRAPH_PARAM_TYPE : unsigned int;
-struct Parameter_Data;
-struct Boilerplate_Var_Data;
-
-struct Builtin_Node_Data {
-    std::string _name;
-    std::string in_liner;
-    std::vector<std::pair<GLSL_TYPE,std::string> > in_vars;
-    std::vector<std::pair<GLSL_TYPE,std::string> > out_vars;
-};
-
-struct Constant_Node_Data {
-    Constant_Node_Data(const char* str, GRAPH_PARAM_GENTYPE gt, GRAPH_PARAM_TYPE t)
-         : _name(str), _gentype(gt), _type(t) {}
-    std::string _name;
-    GRAPH_PARAM_GENTYPE _gentype;
-    GRAPH_PARAM_TYPE _type;
-};
-
-enum VECTOR_OPS : unsigned int {
-    VEC_BREAK2_OP,
-    VEC_BREAK3_OP,
-    VEC_BREAK4_OP,
-    VEC_MAKE2_OP,
-    VEC_MAKE3_OP,
-    VEC_MAKE4_OP
-};
-
-struct Vector_Op_Node_Data {
-    Vector_Op_Node_Data(const char* str, VECTOR_OPS op) : _op(op), _name(str) {}
-    VECTOR_OPS _op;
-    std::string _name;
-};
 
 class SS_Node_Factory {
 protected:
@@ -65,15 +34,14 @@ public:
     std::vector<Builtin_Node_Data> last_data_builtin;
     std::vector<Constant_Node_Data> last_data_constant;
     std::vector<Vector_Op_Node_Data> last_data_vec_op;
-    std::vector<Parameter_Data*> last_data_param;
-    std::vector<Boilerplate_Var_Data> last_data_BP;
 
     // Search functions, caches and returns search results
     const std::vector<Builtin_Node_Data>& get_matching_builtin_nodes(const std::string& query);
     const std::vector<Constant_Node_Data>& get_matching_constant_nodes(std::string query);
     const std::vector<Vector_Op_Node_Data>& get_matching_vector_nodes(std::string query);
-    std::vector<Parameter_Data*>& get_matching_param_nodes(std::string query, std::vector<Parameter_Data*>& data_in);
-    const std::vector<Boilerplate_Var_Data>& get_matching_boilerplate_nodes(std::string query, const SS_Boilerplate_Manager* bp_manager);
+    static std::vector<Parameter_Data*> get_matching_param_nodes(std::string query, const std::vector<Parameter_Data*>& data_in);
+    static std::vector<Parameter_Data*> get_matching_param_nodes(std::string query, const std::vector<std::unique_ptr<Parameter_Data>>& data_in);
+    std::vector<Boilerplate_Var_Data> get_matching_boilerplate_nodes(std::string query, const SS_Boilerplate_Manager* bp_manager);
     void cache_last_query(std::string query);
 
     // Build and return dynamically allocated nodes

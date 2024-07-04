@@ -31,7 +31,12 @@ file(GLOB_RECURSE GLAD_SOURCES
 )
 
 # Add the main executable
-add_executable(shader_scupltor ${MAIN_SOURCES})
+add_executable(shader_scupltor ${MAIN_SOURCES}
+        src/ss/ss_node_types.h
+        src/ss/ss_pins.cpp
+        src/ss/ss_pins.h
+        src/ss/ss_data.cpp
+        src/ss/ss_data.h)
 
 # Add the glad library
 add_library(glad STATIC ${GLAD_SOURCES})

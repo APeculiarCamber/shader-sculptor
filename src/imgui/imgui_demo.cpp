@@ -2483,7 +2483,7 @@ static void ShowDemoWindowLayout()
         ImGui::Checkbox("Disable Mouse Wheel", &disable_mouse_wheel);
         ImGui::Checkbox("Disable Menu", &disable_menu);
 
-        // Child 1: no border, enable horizontal scrollbar
+        // Child 1: no BORDER, enable horizontal scrollbar
         {
             ImGuiWindowFlags window_flags = ImGuiWindowFlags_HorizontalScrollbar;
             if (disable_mouse_wheel)
@@ -2496,7 +2496,7 @@ static void ShowDemoWindowLayout()
 
         ImGui::SameLine();
 
-        // Child 2: rounded border
+        // Child 2: rounded BORDER
         {
             ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
             if (disable_mouse_wheel)
@@ -3924,7 +3924,7 @@ static void ShowDemoWindowTables()
         HelpMarker(
             "Using _Resizable + _SizingFixedFit flags.\n"
             "Fixed-width columns generally makes more sense if you want to use horizontal scrolling.\n\n"
-            "Double-click a column border to auto-fit the column to its contents.");
+            "Double-click a column BORDER to auto-fit the column to its contents.");
         PushStyleCompact();
         static ImGuiTableFlags flags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_ContextMenuInBody;
         ImGui::CheckboxFlags("ImGuiTableFlags_NoHostExtendX", &flags, ImGuiTableFlags_NoHostExtendX);
@@ -4118,7 +4118,7 @@ static void ShowDemoWindowTables()
         }
 
         // Second example: set style.CellPadding to (0.0) or a custom value.
-        // FIXME-TABLE: Vertical border effectively not displayed the same way as horizontal one...
+        // FIXME-TABLE: Vertical BORDER effectively not displayed the same way as horizontal one...
         HelpMarker("Setting style.CellPadding to (0,0) or a custom value.");
         static ImGuiTableFlags flags2 = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
         static ImVec2 cell_padding(0.0f, 0.0f);
@@ -5447,8 +5447,8 @@ static void ShowDemoWindowColumns()
     IMGUI_DEMO_MARKER("Columns (legacy API)/Basic");
     if (ImGui::TreeNode("Basic"))
     {
-        ImGui::Text("Without border:");
-        ImGui::Columns(3, "mycolumns3", false);  // 3-ways, no border
+        ImGui::Text("Without BORDER:");
+        ImGui::Columns(3, "mycolumns3", false);  // 3-ways, no BORDER
         ImGui::Separator();
         for (int n = 0; n < 14; n++)
         {
@@ -5461,8 +5461,8 @@ static void ShowDemoWindowColumns()
         ImGui::Columns(1);
         ImGui::Separator();
 
-        ImGui::Text("With border:");
-        ImGui::Columns(4, "mycolumns"); // 4-ways, with border
+        ImGui::Text("With BORDER:");
+        ImGui::Columns(4, "mycolumns"); // 4-ways, with BORDER
         ImGui::Separator();
         ImGui::Text("ID"); ImGui::NextColumn();
         ImGui::Text("Name"); ImGui::NextColumn();
@@ -6115,7 +6115,7 @@ void ImGui::ShowStyleEditor(ImGuiStyle* ref)
         ref_saved_style = style;
     ImGui::ShowFontSelector("Fonts##Selector");
 
-    // Simplified Settings (expose floating-pointer border sizes as boolean representing 0.0f or 1.0f)
+    // Simplified Settings (expose floating-pointer BORDER sizes as boolean representing 0.0f or 1.0f)
     if (ImGui::SliderFloat("FrameRounding", &style.FrameRounding, 0.0f, 12.0f, "%.0f"))
         style.GrabRounding = style.FrameRounding; // Make GrabRounding always the same value as FrameRounding
     { bool border = (style.WindowBorderSize > 0.0f); if (ImGui::Checkbox("WindowBorder", &border)) { style.WindowBorderSize = border ? 1.0f : 0.0f; } }
@@ -7539,7 +7539,7 @@ static void ShowExampleAppCustomRendering(bool* p_open)
             if (canvas_sz.y < 50.0f) canvas_sz.y = 50.0f;
             ImVec2 canvas_p1 = ImVec2(canvas_p0.x + canvas_sz.x, canvas_p0.y + canvas_sz.y);
 
-            // Draw border and background color
+            // Draw BORDER and background color
             ImGuiIO& io = ImGui::GetIO();
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
             draw_list->AddRectFilled(canvas_p0, canvas_p1, IM_COL32(50, 50, 50, 255));

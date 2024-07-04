@@ -107,20 +107,19 @@ const std::vector<Constant_Node_Data>& SS_Node_Factory::get_matching_constant_no
     std::string mat4("mat4 matrix4");
     last_data_constant.clear();
     if (all_valid || scalar.find(query) != std::string::npos)
-        last_data_constant.emplace_back("Scalar", SS_Scalar, SS_Float);
+        last_data_constant.push_back(Constant_Node_Data{"Scalar", SS_Scalar, SS_Float});
     if (all_valid || vec2.find(query) != std::string::npos)
-        last_data_constant.emplace_back("Vec2", SS_Vec2, SS_Float);
+        last_data_constant.push_back(Constant_Node_Data{"Vec2", SS_Vec2, SS_Float});
     if (all_valid || vec3.find(query) != std::string::npos)
-        last_data_constant.emplace_back("Vec3", SS_Vec3, SS_Float);
+        last_data_constant.push_back(Constant_Node_Data{"Vec3", SS_Vec3, SS_Float});
     if (all_valid || vec4.find(query) != std::string::npos)
-        last_data_constant.emplace_back("Vec4", SS_Vec4, SS_Float);
-    
+        last_data_constant.push_back(Constant_Node_Data{"Vec4", SS_Vec4, SS_Float});
     if (all_valid || mat2.find(query) != std::string::npos)
-        last_data_constant.emplace_back("Mat2", SS_Mat2, SS_Float);
+        last_data_constant.push_back(Constant_Node_Data{"Mat2", SS_Mat2, SS_Float});
     if (all_valid || mat3.find(query) != std::string::npos)
-        last_data_constant.emplace_back("Mat3", SS_Mat3, SS_Float);
+        last_data_constant.push_back(Constant_Node_Data{"Mat3", SS_Mat3, SS_Float});
     if (all_valid || mat4.find(query) != std::string::npos)
-        last_data_constant.emplace_back("Mat4", SS_Mat4, SS_Float);
+        last_data_constant.push_back(Constant_Node_Data{"Mat4", SS_Mat4, SS_Float});
     return last_data_constant;
 }
 
@@ -137,46 +136,60 @@ const std::vector<Vector_Op_Node_Data>& SS_Node_Factory::get_matching_vector_nod
     
     last_data_vec_op.clear();
     if (all_valid || br_vec2.find(query) != std::string::npos)
-        last_data_vec_op.emplace_back("break vec2", VEC_BREAK2_OP);
+        last_data_vec_op.emplace_back(Vector_Op_Node_Data{"break vec2", VEC_BREAK2_OP});
     if (all_valid || br_vec3.find(query) != std::string::npos)
-        last_data_vec_op.emplace_back("break vec3", VEC_BREAK3_OP);
+        last_data_vec_op.push_back(Vector_Op_Node_Data{"break vec3", VEC_BREAK3_OP});
     if (all_valid || br_vec4.find(query) != std::string::npos)
-        last_data_vec_op.emplace_back("break vec4", VEC_BREAK4_OP);
+        last_data_vec_op.push_back(Vector_Op_Node_Data{"break vec4", VEC_BREAK4_OP});
     
     if (all_valid || mk_vec2.find(query) != std::string::npos)
-        last_data_vec_op.emplace_back("make vec2", VEC_MAKE2_OP);
+        last_data_vec_op.push_back(Vector_Op_Node_Data{"make vec2", VEC_MAKE2_OP});
     if (all_valid || mk_vec3.find(query) != std::string::npos)
-        last_data_vec_op.emplace_back("make vec3", VEC_MAKE3_OP);
+        last_data_vec_op.push_back(Vector_Op_Node_Data{"make vec3", VEC_MAKE3_OP});
     if (all_valid || mk_vec4.find(query) != std::string::npos)
-        last_data_vec_op.emplace_back("make vec4", VEC_MAKE4_OP);
+        last_data_vec_op.push_back(Vector_Op_Node_Data{"make vec4", VEC_MAKE4_OP});
     return last_data_vec_op;
 }
 
-std::vector<Parameter_Data*>& SS_Node_Factory::get_matching_param_nodes
-    (std::string query, std::vector<Parameter_Data*>& data_in) {
+std::vector<Parameter_Data*> SS_Node_Factory::get_matching_param_nodes
+    (std::string query, const std::vector<Parameter_Data*>& data_in) {
     query = string_to_lower(query);
     bool all_valid =  std::string("paramsparameters").find(query) != std::string::npos;
-    last_data_param.clear();
+    std::vector<Parameter_Data*> filteredParams;
     for (Parameter_Data* p_data : data_in) {
-        std::string lower_param = string_to_lower(std::string(p_data->_param_name));
+        std::string lower_param = string_to_lower(std::string(p_data->GetName()));
         if (all_valid || lower_param.find(query) != std::string::npos) {
-            last_data_param.push_back(p_data);
+            filteredParams.push_back(p_data);
         }
     }
-    return last_data_param;
+    return filteredParams;
 }
 
-const std::vector<Boilerplate_Var_Data>& SS_Node_Factory::get_matching_boilerplate_nodes(
+std::vector<Parameter_Data *> SS_Node_Factory::get_matching_param_nodes(std::string query,
+                                                                        const std::vector<std::unique_ptr<Parameter_Data>> &data_in) {
+    query = string_to_lower(query);
+    bool all_valid =  std::string("paramsparameters").find(query) != std::string::npos;
+    std::vector<Parameter_Data*> filteredParams;
+    for (const auto& p_data : data_in) {
+        std::string lower_param = string_to_lower(std::string(p_data->GetName()));
+        if (all_valid || lower_param.find(query) != std::string::npos) {
+            filteredParams.push_back(p_data.get());
+        }
+    }
+    return filteredParams;
+}
+
+std::vector<Boilerplate_Var_Data> SS_Node_Factory::get_matching_boilerplate_nodes(
     std::string query, const SS_Boilerplate_Manager* bp_manager) {
         query = string_to_lower(query);
-        last_data_BP.clear();
+        std::vector<Boilerplate_Var_Data> dataBP;
 
         bool all_valid = std::string("boilerplatedefault").find(query) != std::string::npos;
-        for (auto bp_var : bp_manager->get_usable_variables()) {
+        for (auto bp_var : bp_manager->GetUsableVariables()) {
             if (all_valid || string_to_lower(std::string(bp_var._name)).find(query) != std::string::npos)
-                last_data_BP.push_back(bp_var);
+                dataBP.push_back(bp_var);
         }
-        return last_data_BP;
+        return dataBP;
     }
 
 
@@ -190,7 +203,7 @@ void SS_Node_Factory::cache_last_query(const std::string query) {
 
 Builtin_GraphNode* SS_Node_Factory::build_builtin_node(Builtin_Node_Data& node_data, int id, ImVec2 pos, unsigned int fb) {
     Builtin_GraphNode* n = new Builtin_GraphNode(node_data, id, pos);
-    std::vector<struct Parameter_Data*> nil;
+    std::vector<Parameter_Data*> nil;
     n->GenerateIntermediateResultFrameBuffers();
     // n->CompileIntermediateCode(fb, nil);
     return n;
@@ -198,7 +211,7 @@ Builtin_GraphNode* SS_Node_Factory::build_builtin_node(Builtin_Node_Data& node_d
 
 Constant_Node* SS_Node_Factory::build_constant_node(Constant_Node_Data& node_data, int id, ImVec2 pos, unsigned int fb) {
     Constant_Node* n = new Constant_Node(node_data, id, pos);
-    std::vector<struct Parameter_Data*> nil;
+    std::vector<Parameter_Data*> nil;
     n->GenerateIntermediateResultFrameBuffers();
     // n->CompileIntermediateCode(fb, nil);
     return n;
@@ -211,14 +224,15 @@ Vector_Op_Node* SS_Node_Factory::build_vec_op_node(Vector_Op_Node_Data& node_dat
 
 Param_Node* SS_Node_Factory::build_param_node(Parameter_Data* param_data, int id, ImVec2 pos, unsigned int fb) {
     Param_Node* n = new Param_Node(param_data, id, pos);
-    std::vector<struct Parameter_Data*> nil;
+    std::vector<Parameter_Data*> nil;
     n->GenerateIntermediateResultFrameBuffers();
     return n;
 }
 
 Boilerplate_Var_Node* SS_Node_Factory::build_boilerplate_var_node(Boilerplate_Var_Data& data, SS_Boilerplate_Manager* bm, int id, ImVec2 pos, unsigned int fb) {
     Boilerplate_Var_Node* n = new Boilerplate_Var_Node(data, bm, id, pos);
-    std::vector<struct Parameter_Data*> nil;
+    std::vector<Parameter_Data*> nil;
     n->GenerateIntermediateResultFrameBuffers();
     return n;
 }
+

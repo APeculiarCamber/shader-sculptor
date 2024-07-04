@@ -2,19 +2,9 @@
 #define SS_PLATE
 
 #include <unordered_map>
+#include <utility>
+#include <memory>
 #include "ss_node.hpp"
-
-/**
- * @brief Variable data for boilerplate nodes and pins
- * 
- */
-struct Boilerplate_Var_Data {
-    Boilerplate_Var_Data(const std::string& name, GLSL_TYPE t, bool is_frag)
-        : _name(name), type(t), frag_only(is_frag) {}
-    std::string _name;
-    GLSL_TYPE type;
-    bool frag_only;
-};
 
 /**
  * @brief Base Class for boilerplate nodes and code.
@@ -23,51 +13,47 @@ struct Boilerplate_Var_Data {
  */
 class SS_Boilerplate_Manager {
 public:
-    SS_Boilerplate_Manager();
-    ~SS_Boilerplate_Manager() {
-        if (_vertex_node) free(_vertex_node);
-        if (_frag_node) free(_frag_node);
-    }
-    // get the terminal vertex code
-    virtual std::string get_vert_terminal_boilerplate_code() = 0;
-    // get the terminal fragment code
-    virtual std::string get_frag_terminal_boilerplate_code() = 0;
     // make a material of type which will effectively utilize the boilerplate code
-    virtual class ga_material* make_material() = 0;
-    const std::string& get_vert_init_boilerplate_code();
-    const std::string& get_vert_init_boilerplate_declares();
-    const std::string& get_frag_init_boilerplate_code();
-    const std::string& get_frag_init_boilerplate_declares();
+    virtual std::unique_ptr<class ga_material> MakeMaterial() = 0;
 
-    const std::string& get_default_vert_shader() { return default_vert_shader; };
-    const std::string& get_default_frag_shader() { return default_frag_shader; };
-    void set_terminal_nodes(Terminal_Node* vertex_node, Terminal_Node* frag_node);
-    const std::vector<Boilerplate_Var_Data>& get_usable_variables() const;
+    // Get the declares/header for the vertex shader
+    virtual std::string GetVertInitBoilerplateDeclares() = 0;
+    // Get the initial body code for the vertex shader
+    virtual std::string GetVertInitBoilerplateCode() = 0;
+    // Get the terminal vertex code
+    virtual std::string GetVertTerminalBoilerplateCode() = 0;
+    // Get the declares/header for the fragment shader
+    virtual std::string GetFragInitBoilerplateDeclares() = 0;
+    // Get the initial body code for the fragment shader
+    virtual std::string GetFragInitBoilerplateCode() = 0;
+    // Get the terminal fragment code
+    virtual std::string GetFragTerminalBoilerplateCode() = 0;
 
-    
-    const std::vector<Boilerplate_Var_Data>& get_vert_pin_data() const;
-    const std::vector<Boilerplate_Var_Data>& get_frag_pin_data() const;
-    std::string get_output_code_for_var(std::string& var_name) const;
+    // Get descriptions of the nodes which shaders can use (uniforms)
+    const std::vector<Boilerplate_Var_Data>& GetUsableVariables() const;
 
-    Terminal_Node* get_terminal_frag_node() { return _frag_node; }
-    Terminal_Node* get_terminal_vert_node() { return _vertex_node; }
+    // Get the INPUT pins required for the final vertex computations
+    const std::vector<Boilerplate_Var_Data>& GetTerminalVertPinData() const;
+    // Get the INPUT pins required for the final fragment computations
+    const std::vector<Boilerplate_Var_Data>& GetTerminalFragPinData() const;
+    // Return code to display the intermediate result of a variable as the final fragment color
+    std::string GetIntermediateResultCodeForVar(std::string& var_name) const;
+
+
+    // NOTE: This class does not own these nodes, hence the raw pointer rather than a unique pointer, TODO: pending refactor
+    void SetTerminalNodes(Terminal_Node* vertNode, Terminal_Node* frNode);
+    Terminal_Node* GetTerminalFragNode() { return fragNode; }
+    Terminal_Node* GetTerminalVertexNode() { return vertexNode; }
+
 protected:
-    std::unordered_map<std::string, std::string> var_name_to_output_code;
-    std::vector<Boilerplate_Var_Data> usable_vars;
+    std::unordered_map<std::string, std::string> m_varNameToOutputCodeMap;
 
-    std::vector<Boilerplate_Var_Data> vert_pins_data;
-    std::vector<Boilerplate_Var_Data> frag_pins_data;
+    std::vector<Boilerplate_Var_Data> m_usableVars;
+    std::vector<Boilerplate_Var_Data> m_vertPinData;
+    std::vector<Boilerplate_Var_Data> m_fragPinData;
 
-    std::string init_vert_code;
-    std::string init_frag_code;
-    std::string init_vert_declares;
-    std::string init_frag_declares;
-
-    std::string default_vert_shader;
-    std::string default_frag_shader;
-
-    Terminal_Node* _vertex_node = nullptr;
-    Terminal_Node* _frag_node = nullptr;
+    Terminal_Node* vertexNode = nullptr;
+    Terminal_Node* fragNode = nullptr;
 };
 
 /**
@@ -77,27 +63,29 @@ protected:
 class Unlit_Boilerplate_Manager : public SS_Boilerplate_Manager {
 public:
     Unlit_Boilerplate_Manager();
-    void init();
-    // Utilize pin connections to complete the shader
-    std::string get_vert_terminal_boilerplate_code() override;
-    // Utilize pin connections to complete the shader
-    std::string get_frag_terminal_boilerplate_code() override;
-    class ga_material* make_material() override;
+    std::string GetVertInitBoilerplateDeclares() override;
+    std::string GetVertInitBoilerplateCode() override;
+    std::string GetVertTerminalBoilerplateCode() override;
+    std::string GetFragInitBoilerplateDeclares() override;
+    std::string GetFragInitBoilerplateCode() override;
+    std::string GetFragTerminalBoilerplateCode() override;
+    std::unique_ptr<ga_material> MakeMaterial() override;
 };
 
 /**
  * @brief Shader with PBR-like shading.
- * Allows albedo, roughness, metalness, and lights.
+ * Accepts albedo, roughness, metalness; and allows lights.
  * 
  */
 class PBR_Lit_Boilerplate_Manager : public SS_Boilerplate_Manager {
 public:
     PBR_Lit_Boilerplate_Manager();
-    void init();
-    // Utilize pin connections to complete the shader
-    std::string get_vert_terminal_boilerplate_code() override;
-    // Utilize pin connections to complete the shader
-    std::string get_frag_terminal_boilerplate_code() override;
-    class ga_material* make_material() override;
+    std::string GetVertInitBoilerplateDeclares() override;
+    std::string GetVertInitBoilerplateCode() override;
+    std::string GetVertTerminalBoilerplateCode() override;
+    std::string GetFragInitBoilerplateDeclares() override;
+    std::string GetFragInitBoilerplateCode() override;
+    std::string GetFragTerminalBoilerplateCode() override;
+    std::unique_ptr<ga_material> MakeMaterial() override;
 };
 #endif

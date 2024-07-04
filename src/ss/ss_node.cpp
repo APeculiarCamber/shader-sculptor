@@ -2,24 +2,18 @@
 #include <fstream>
 #include "ss_graph.hpp"
 #include "ss_node.hpp"
-#include "ss_node_factory.hpp"
 #include "ss_parser.hpp"
 
 
 #include "../graphics/ga_cube_component.h"
 #include "../graphics/ga_material.h"
+#include "ss_pins.h"
 
 Base_GraphNode::~Base_GraphNode() {
-    if (can_draw_intermed_image()) {
+    // TODO: non-virtual version of the most common canIntermed function
+    if (!output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1) {
         glDeleteTextures(1, &nodes_rendered_texture);
         glDeleteTextures(1, &nodes_depth_texture);
-    }
-
-    if (input_pins) {
-        delete[] input_pins;
-    }
-    if (output_pins) {
-        delete[] output_pins;
     }
 }
 
@@ -32,8 +26,8 @@ Builtin_GraphNode::Builtin_GraphNode(Builtin_Node_Data& data, int id, ImVec2 pos
 
         num_input = data.in_vars.size();
         num_output = data.out_vars.size();
-        input_pins = new Base_InputPin[num_input];
-        output_pins = new Base_OutputPin[num_output];
+        input_pins = std::vector<Base_InputPin>(num_input);
+        output_pins = std::vector<Base_OutputPin>(num_output);
 
         for (int i = 0; i < num_input; ++i) {
             GLSL_TYPE type = data.in_vars[i].first;
@@ -91,9 +85,9 @@ void Base_GraphNode::propogate_gentype_in_subgraph(Base_Pin* start_pin,
         input_pins[i].type.type_flags &= (~GLSL_LenMask); // clear len mask
         input_pins[i].type.type_flags |= gen_len_intersect; // set len mask
 
-        if (!(input_pins + i)->input) continue;
-        (input_pins + i)->input->owner->propogate_gentype_in_subgraph(
-            (input_pins + i)->input, len_type, processed_ids);
+        if (not input_pins[i].input) continue;
+        input_pins[i].input->owner->propogate_gentype_in_subgraph(
+            input_pins[i].input, len_type, processed_ids);
     } 
     // OUTPUT
     for (int o = 0; o < num_output; ++o) {
@@ -104,7 +98,7 @@ void Base_GraphNode::propogate_gentype_in_subgraph(Base_Pin* start_pin,
         output_pins[o].type.type_flags &= ~GLSL_LenMask; // clear len mask
         output_pins[o].type.type_flags |= gen_len_intersect; // set len mask
 
-        for (Base_InputPin* i_pin : (output_pins + o)->output) {
+        for (Base_InputPin* i_pin : output_pins[o].output) {
             if (!i_pin) continue;
             i_pin->owner->propogate_gentype_in_subgraph(i_pin, len_type, processed_ids);
         }
@@ -148,7 +142,7 @@ unsigned int Base_GraphNode::get_most_restrictive_gentype_in_subgraph(Base_Pin* 
     // INPUT
     for (int i = 0; i < num_input; ++i) {
         if (!is_gentype(input_pins[i].type.type_flags)) continue; // dont process non-generic pins in the node
-        Base_OutputPin* o_pin = (input_pins + i)->input;
+        Base_OutputPin* o_pin = input_pins[i].input;
         if (!o_pin) continue; // output pin exists
 
         unsigned int res_type = get_most_restrictive_gentype_in_subgraph(o_pin, processed_ids);
@@ -158,7 +152,7 @@ unsigned int Base_GraphNode::get_most_restrictive_gentype_in_subgraph(Base_Pin* 
     for (int o = 0; o < num_output; ++o) {
         if (!is_gentype(output_pins[o].type.type_flags)) continue; // dont process non-generic pins in the node
 
-        for (Base_InputPin* i_pin : (output_pins + o)->output) {
+        for (Base_InputPin* i_pin : output_pins[o].output) {
             if (!i_pin) continue; // pin exists
 
             unsigned int res_type = get_most_restrictive_gentype_in_subgraph(i_pin, processed_ids);
@@ -214,7 +208,7 @@ void Base_GraphNode::CompileIntermediateCode(SS_Boilerplate_Manager* bp) {
     //unsigned int err = glGetError();
 }
 
-void Base_GraphNode::DrawIntermediateResult(unsigned int framebuffer, std::vector<struct Parameter_Data*>& params) {
+void Base_GraphNode::DrawIntermediateResult(unsigned int framebuffer, const std::vector<std::unique_ptr<Parameter_Data>>& params) {
 
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
@@ -234,7 +228,7 @@ void Base_GraphNode::DrawIntermediateResult(unsigned int framebuffer, std::vecto
     
     if (_cube) {
         ga_mat4f view{};
-        view.make_lookat_rh({2, 2, 3}, {0, 0, 0}, {0, 1, 0});
+        view.make_lookat_rh(ga_vec3f{2, 2, 3}, ga_vec3f{0, 0, 0}, ga_vec3f{0, 1, 0});
         ga_mat4f perspective{};
         perspective.make_perspective_rh(ga_degrees_to_radians(45.0f), 1.0f, 0.1f, 10000.0f);
 
@@ -270,7 +264,7 @@ void Base_GraphNode::SetShaderCode(const std::string& frag_shad, const std::stri
 // draw output pins with function
 // draw output pin bezier
 
-float border = 5;
+const float BORDER = 5;
 float mid_pin_col = 40;
 float line_thickness = 2;
 float line_height = 5;
@@ -303,20 +297,20 @@ void Base_GraphNode::set_bounds(float scale) {
     // set main rect size
     float y_max = std::max(in_y, out_y);
     float x_max = std::max(in_x_max + out_x_max + mid_pin_col, name_size.x);
-    rect_size = ImVec2(x_max + border*2, y_max + name_size.y + line_height + border*2);
+    rect_size = ImVec2(x_max + BORDER * 2, y_max + name_size.y + line_height + BORDER * 2);
 
     // Get relative (to upper left) position of pins
-    ImVec2 pin_pos = ImVec2(border, name_size.y + line_height + border);
+    ImVec2 pin_pos = ImVec2(BORDER, name_size.y + line_height + BORDER);
     for (int i = 0; i < num_input; ++i) {
         ImVec2 pin_size = in_pin_sizes[i];
         in_pin_rel_pos.push_back(pin_pos);
         pin_pos.y += (pin_size.y + pin_y_step);
     }
 
-    pin_pos = ImVec2(rect_size.x, name_size.y + line_height + border);
+    pin_pos = ImVec2(rect_size.x, name_size.y + line_height + BORDER);
     for (int o = 0; o < num_output; ++o) {
         ImVec2 pin_size = out_pin_sizes[o];
-        out_pin_rel_pos.push_back(pin_pos - ImVec2(pin_size.x + border, 0));
+        out_pin_rel_pos.push_back(pin_pos - ImVec2(pin_size.x + BORDER, 0));
         pin_pos.y += (pin_size.y + pin_y_step);
     }
 
@@ -354,8 +348,8 @@ void Base_GraphNode::draw(ImDrawList* list, ImVec2 pos_offset, bool is_hover) {
     // Draw main rect
     unsigned int col = is_hover ? 0xffff4444 : 0xffaa4444;
     list->AddRectFilled(pos, pos + rect_size, col, rect_rounding);
-    list->AddText(pos + ImVec2(border, border), 0xffffffff, _name.c_str());
-    list->AddLine(pos + ImVec2(0, name_size.y + border), pos + ImVec2(rect_size.x, name_size.y + border), 0xffffffff, 2.0f);
+    list->AddText(pos + ImVec2(BORDER, BORDER), 0xffffffff, _name.c_str());
+    list->AddLine(pos + ImVec2(0, name_size.y + BORDER), pos + ImVec2(rect_size.x, name_size.y + BORDER), 0xffffffff, 2.0f);
 
     // For each input, ask it to be drawn at proper location
     for (int i = 0; i < num_input; ++i) {
@@ -381,7 +375,7 @@ void Base_GraphNode::draw(ImDrawList* list, ImVec2 pos_offset, bool is_hover) {
 
 void Base_GraphNode::draw_output_connects(ImDrawList* list, ImVec2 offset) {
     for (int o = 0; o < num_output; ++o) {
-        Base_OutputPin* o_pin = output_pins + o;
+        Base_OutputPin* o_pin = &output_pins[o];
         ImU32 color = SS_Parser::type_to_color(o_pin->type);
 
         for (Base_InputPin* i_pin : o_pin->output) {
@@ -413,12 +407,12 @@ Base_Pin* Base_GraphNode::get_hovered_pin(ImVec2 mouse_pos) {
     for (int i = 0; i < num_input; ++i) {
         ImVec2 pin_pos = ul + in_pin_rel_pos[i];
         if (contains(pin_pos, pin_pos + in_pin_sizes[i], mouse_pos))
-            pin = input_pins + i;
+            pin = &input_pins[i];
     }
     for (int o = 0; o < num_output; ++o) {
         ImVec2 pin_pos = ul + out_pin_rel_pos[o];
         if (contains(pin_pos, pin_pos + out_pin_sizes[o], mouse_pos))
-            pin = output_pins + o;
+            pin = &output_pins[o];
     }
 
     if (pin) {
@@ -439,74 +433,6 @@ bool Base_GraphNode::is_display_button_hovered_over(ImVec2 m) {
     ImVec2 maxx = p + display_panel_rel_pos + display_panel_rel_size;
     return (m.x > minn.x && m.y > minn.y) && (m.x < maxx.x && m.y < maxx.y);
 }
-
-
-
-
-ImVec2 Base_Pin::get_size(float circle_off, float border) {
-    ImVec2 text_size = ImGui::CalcTextSize(_name.c_str());
-    float circle_rad = text_size.y / 2;
-    return text_size + ImVec2(circle_rad + circle_off + border * 2, border * 2);
-}
-
-ImVec2 Base_InputPin::get_pin_pos(float circle_off, float border, float* rad) {
-    assert(rad);
-    ImVec2 pos = owner->_pos - ImVec2(owner->rect_size.x * .5f, owner->rect_size.y * .5f);
-    ImVec2 bound_pos = owner->in_pin_rel_pos[index];
-    *rad = ImGui::CalcTextSize(_name.c_str()).y;
-    return pos + bound_pos + ImVec2(*rad + border, *rad + border);
-}
-
-ImVec2 Base_OutputPin::get_pin_pos(float circle_off, float border, float* rad) {
-    assert(rad);
-    ImVec2 pos = owner->_pos - ImVec2(owner->rect_size.x * .5f, owner->rect_size.y * .5f);
-    ImVec2 bound_pos = owner->out_pin_rel_pos[index];
-    ImVec2 text_size = ImGui::CalcTextSize(_name.c_str());
-    float off_x = text_size.x;
-    *rad = text_size.y;
-    return pos + bound_pos + ImVec2(*rad + border + circle_off + off_x, *rad + border);
-}
-
-
-
-void Base_InputPin::draw(ImDrawList* d, ImVec2 pos, float circle_off, float border) {
-    ImVec2 text_size = ImGui::CalcTextSize(_name.c_str());
-    ImU32 color = SS_Parser::type_to_color(type);
-
-    float circle_rad = text_size.y / 2;
-
-    d->AddCircleFilled(pos + ImVec2(border + circle_rad, border + circle_rad), circle_rad, color);
-    d->AddText(pos + ImVec2(border + 2*circle_rad + circle_off, border), 0xffffffff, _name.c_str());
-}
-
-void Base_InputPin::disconnect_all_from(SS_Graph* g) {
-    if (input)
-        g->DisconnectPins(this, input);
-}
-void Base_OutputPin::disconnect_all_from(SS_Graph* g) {
-    std::vector<Base_InputPin*> output_COPY(output);
-
-    for (Base_InputPin* i_pin : output_COPY)
-        g->DisconnectPins(i_pin, this);
-}
-
-void Base_OutputPin::draw(ImDrawList* d, ImVec2 pos, float circle_off, float border) {
-    ImVec2 text_size = ImGui::CalcTextSize(_name.c_str());
-    ImU32 color = SS_Parser::type_to_color(type);
-
-    float circle_rad = text_size.y / 2;
-
-    d->AddText(pos + ImVec2(border, border), 0xffffffff, _name.c_str());
-    d->AddCircleFilled(pos + ImVec2(text_size.x + border + circle_off + circle_rad, border + circle_rad), circle_rad, color);
-}
-
-std::string Base_OutputPin::get_pin_output_name() { 
-    return owner->request_output(index); 
-}
-
-
-
-
 
 
 std::string Builtin_GraphNode::request_output(int out_index) {
@@ -574,10 +500,10 @@ Builtin_GraphNode::~Builtin_GraphNode() {
 Constant_Node::Constant_Node(Constant_Node_Data& data, int id, ImVec2 pos) {
     _id = id;
     _old_pos = _pos = pos;
-    _name = data._name;
+    _name = data.m_name;
 
-    _data_gen = data._gentype;
-    _data_type = data._type;
+    _data_gen = data.m_gentype;
+    _data_type = data.m_type;
 
     _data = nullptr;
     if (_data_type == SS_Float) {
@@ -610,29 +536,29 @@ Constant_Node::Constant_Node(Constant_Node_Data& data, int id, ImVec2 pos) {
 
     num_output = 1;
     num_input = 0;
-    output_pins = new Base_OutputPin[num_output];
+    output_pins = std::vector<Base_OutputPin>(num_output);
 
-    output_pins->type = SS_Parser::constant_type_to_type(data._gentype, data._type);
-    output_pins->bInput = false;
-    output_pins->index = 0;
-    output_pins->owner = this;
-    output_pins->_name = "CONST OUT";
+    output_pins[0].type = SS_Parser::constant_type_to_type(data.m_gentype, data.m_type);
+    output_pins[0].bInput = false;
+    output_pins[0].index = 0;
+    output_pins[0].owner = this;
+    output_pins[0]._name = "CONST OUT";
 }
 
 void Vector_Op_Node::make_vec_break(int s) {
     num_input = 1;
     num_output = s;
 
-    input_pins = new Base_InputPin[1];
-    input_pins->bInput = true;
-    input_pins->index = 0;
-    input_pins->owner = this;
-    input_pins->_name = "VECTOR";
-    input_pins->type = GLSL_TYPE(GLSL_AllTypes | (GLSL_Vec2 << (s - 2)), 1);
+    input_pins = std::vector<Base_InputPin>(1);
+    input_pins[0].bInput = true;
+    input_pins[0].index = 0;
+    input_pins[0].owner = this;
+    input_pins[0]._name = "VECTOR";
+    input_pins[0].type = GLSL_TYPE(GLSL_AllTypes | (GLSL_Vec2 << (s - 2)), 1);
 
-    output_pins = new Base_OutputPin[s];
+    output_pins = std::vector<Base_OutputPin>(num_output);
     const char* sw[] = { "x", "y", "z", "w" };
-    for (int o = 0; o < s; ++o) {
+    for (int o = 0; o < num_output; ++o) {
         output_pins[o].bInput = false;
         output_pins[o].index = o;
         output_pins[o].owner = this;
@@ -645,14 +571,14 @@ void Vector_Op_Node::make_vec_make(int s) {
     num_input = s;
     num_output = 1;
 
-    output_pins = new Base_OutputPin[1];
-    output_pins->bInput = false;
-    output_pins->index = 0;
-    output_pins->owner = this;
-    output_pins->_name = "VECTOR";
-    output_pins->type = GLSL_TYPE(GLSL_AllTypes | (GLSL_Vec2 << (s - 2)), 1);
+    output_pins = std::vector<Base_OutputPin>(num_input);
+    output_pins[0].bInput = false;
+    output_pins[0].index = 0;
+    output_pins[0].owner = this;
+    output_pins[0]._name = "VECTOR";
+    output_pins[0].type = GLSL_TYPE(GLSL_AllTypes | (GLSL_Vec2 << (s - 2)), 1);
 
-    input_pins = new Base_InputPin[s];
+    input_pins = std::vector<Base_InputPin>(num_input);
     const char* sw[] = { "x", "y", "z", "w" };
     for (int i = 0; i < s; ++i) {
         input_pins[i].bInput = true;
@@ -666,13 +592,13 @@ void Vector_Op_Node::make_vec_make(int s) {
 Vector_Op_Node::Vector_Op_Node(Vector_Op_Node_Data& data, int id, ImVec2 pos) {
     _id = id;
     _old_pos = _pos = pos;
-    _name = data._name;
+    _name = data.m_name;
+
+    input_pins = std::vector<Base_InputPin>(num_input);
+    output_pins = std::vector<Base_OutputPin>(num_output);
+    _vec_op = data.m_op;
     
-    input_pins = 0;
-    output_pins = 0;
-    _vec_op = data._op;
-    
-    switch (data._op) {
+    switch (data.m_op) {
         case VEC_BREAK2_OP: make_vec_break(2); break;
         case VEC_BREAK3_OP: make_vec_break(3); break;
         case VEC_BREAK4_OP: make_vec_break(4); break;
@@ -687,13 +613,13 @@ std::string Vector_Op_Node::request_output(int out_index) {
 
     if (_vec_op == VEC_BREAK2_OP || _vec_op == VEC_BREAK3_OP || _vec_op == VEC_BREAK4_OP) {
         const char* sw[] = { "x", "y", "z", "w" };
-        std::string var_name = input_pins->input->owner->request_output(0);
+        std::string var_name = input_pins[0].input->owner->request_output(0);
         return var_name + "." + sw[out_index];
 
 
     } else if (_vec_op == VEC_MAKE2_OP || _vec_op == VEC_MAKE3_OP || _vec_op == VEC_MAKE4_OP) {
         std::string output = "vec";
-        output += ('0' + num_input);
+        output += std::to_string(num_input);
         output += "(";
         for (int i = 0; i < num_input; ++i) {
             if (input_pins[i].input) {
@@ -717,18 +643,19 @@ std::string Vector_Op_Node::process_for_code() {
 
 Param_Node::Param_Node(Parameter_Data* data, int id, ImVec2 pos) {
     _id = id;
+    _paramID = data->GetID();
     _old_pos = _pos = pos;
-    _name = data->_param_name;
+    _name = data->GetName();
 
     num_output = 1;
     num_input = 0;
-    output_pins = new Base_OutputPin[num_output];
+    output_pins = std::vector<Base_OutputPin>(num_output);
 
-    output_pins->type = SS_Parser::constant_type_to_type(data->_gentype, data->_type);
-    output_pins->bInput = false;
-    output_pins->index = 0;
-    output_pins->owner = this;
-    output_pins->_name = "PARAM OUT";
+    output_pins[0].type = data->GetType();
+    output_pins[0].bInput = false;
+    output_pins[0].index = 0;
+    output_pins[0].owner = this;
+    output_pins[0]._name = "PARAM OUT";
 }
 
 std::string Param_Node::request_output(int out_index) {
@@ -759,31 +686,23 @@ Boilerplate_Var_Node::Boilerplate_Var_Node(Boilerplate_Var_Data data, SS_Boilerp
 
     num_input = 0;
     num_output = 1;
-    output_pins = new Base_OutputPin[1];
-    input_pins = nullptr;
+    input_pins = std::vector<Base_InputPin>(num_input);
+    output_pins = std::vector<Base_OutputPin>(num_output);
 
-    output_pins->type = data.type;
-    output_pins->bInput = false;
-    output_pins->index = 0;
-    output_pins->owner = this;
-    output_pins->_name = data._name;
+    output_pins[0].type = data.type;
+    output_pins[0].bInput = false;
+    output_pins[0].index = 0;
+    output_pins[0].owner = this;
+    output_pins[0]._name = data._name;
 }
 
 
 std::string Boilerplate_Var_Node::request_output(int out_index) {
-    return _bp_manager->get_output_code_for_var(_name);
+    return _bp_manager->GetIntermediateResultCodeForVar(_name);
 }
 std::string Boilerplate_Var_Node::process_for_code() {
     return "";
 }
-
-Boilerplate_Var_Node::~Boilerplate_Var_Node() {
-    if (!output_pins->type.IsMatrix() && output_pins->type.arr_size == 1) {
-        glDeleteTextures(1, &nodes_rendered_texture);
-        glDeleteTextures(1, &nodes_depth_texture);
-    }
-}
-
 
 Terminal_Node::Terminal_Node(const std::vector<Boilerplate_Var_Data>& terminal_pins, int id, ImVec2 pos) {
     _id = id;
@@ -793,10 +712,8 @@ Terminal_Node::Terminal_Node(const std::vector<Boilerplate_Var_Data>& terminal_p
 
     num_input = terminal_pins.size();
     num_output = 0;
-    input_pins = nullptr;
-    if (num_input > 0)
-        input_pins = new Base_InputPin[num_input];
-    output_pins = nullptr;
+    input_pins = std::vector<Base_InputPin>(num_input);
+    output_pins = std::vector<Base_OutputPin>(num_output);
 
     for (std::vector<Boilerplate_Var_Data>::size_type i = 0u; i < terminal_pins.size(); ++i) {
         const auto& data = terminal_pins[i];
@@ -816,7 +733,7 @@ Terminal_Node::~Terminal_Node()  {
 
 
 std::string Constant_Node::request_output(int out_index) {
-    GLSL_TYPE t = output_pins->type;
+    GLSL_TYPE t = output_pins[0].type;
     float* f_data = (float*)_data;
     std::stringstream sss;
     
@@ -848,13 +765,4 @@ std::string Constant_Node::request_output(int out_index) {
 }
 std::string Constant_Node::process_for_code() {
     return "";
-}
-
-Constant_Node::~Constant_Node() {
-    if (_data) free(_data);
-    if (!output_pins->type.IsMatrix() && output_pins->type.arr_size == 1)
-    {
-        glDeleteTextures(1, &nodes_rendered_texture);
-        glDeleteTextures(1, &nodes_depth_texture);
-    }
 }

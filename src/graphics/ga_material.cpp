@@ -53,36 +53,34 @@ bool ga_material::init(std::string& source_vs, std::string& source_fs)
 }
 
 unsigned int ga_material::set_uniforms_by_type(Parameter_Data* p_data, unsigned int texture_id) {
-	if (p_data->_type == SS_Texture2D) {
-		_program->get_uniform(p_data->_param_name).set((unsigned int*)p_data->data_container, texture_id);
+	if (p_data->GetParamType() == SS_Texture2D) {
+		_program->get_uniform(p_data->GetName()).set((const unsigned int*)p_data->GetData(), texture_id);
 		return texture_id + 1;
 	}
-	if (p_data->_type == SS_Float) {
-		switch (p_data->_gentype) {
-			// case SS_Mat2: _program->get_uniform(p_data->_param_name).set(*(ga_mat2f*)p_data->data_container); break;
-			case SS_Mat3: _program->get_uniform(p_data->_param_name).set(*(ga_mat3f*)p_data->data_container); break;
-			case SS_Mat4: _program->get_uniform(p_data->_param_name).set(*(ga_mat4f*)p_data->data_container); break;
-			case SS_Scalar: _program->get_uniform(p_data->_param_name).set(*(float*)p_data->data_container); break;
-			case SS_Vec2: _program->get_uniform(p_data->_param_name).set(*(ga_vec2f*)p_data->data_container); break;
-			case SS_Vec3: _program->get_uniform(p_data->_param_name).set(*(ga_vec3f*)p_data->data_container); break;
-			case SS_Vec4: _program->get_uniform(p_data->_param_name).set(*(ga_vec4f*)p_data->data_container); break;
-            case SS_Mat2:
+	if (p_data->GetParamType() == SS_Float) {
+		switch (p_data->GetParamGenType()) {
+			case SS_Mat2: _program->get_uniform(p_data->GetName()).set(*(const ga_mat2f*)p_data->GetData()); break;
+			case SS_Mat3: _program->get_uniform(p_data->GetName()).set(*(const ga_mat3f*)p_data->GetData()); break;
+			case SS_Mat4: _program->get_uniform(p_data->GetName()).set(*(const ga_mat4f*)p_data->GetData()); break;
+			case SS_Scalar: _program->get_uniform(p_data->GetName()).set(*(const float*)p_data->GetData()); break;
+			case SS_Vec2: _program->get_uniform(p_data->GetName()).set(*(const ga_vec2f*)p_data->GetData()); break;
+			case SS_Vec3: _program->get_uniform(p_data->GetName()).set(*(const ga_vec3f*)p_data->GetData()); break;
+			case SS_Vec4: _program->get_uniform(p_data->GetName()).set(*(const ga_vec4f*)p_data->GetData()); break;
             case SS_MAT:
-
                 break;
         }
 	}
 	return texture_id;
 }
 
-void ga_material::bind(const ga_mat4f& view, const ga_mat4f& proj, const ga_mat4f& transform, std::vector<Parameter_Data*>& p_datas)
+void ga_material::bind(const ga_mat4f& view, const ga_mat4f& proj, const ga_mat4f& transform, const std::vector<std::unique_ptr<Parameter_Data>>& p_datas)
 {
 	_program->use();
 	ga_mat4f view_proj = view * proj;
 
 	unsigned int current_tex_id = 0;
-	for (Parameter_Data* p_data : p_datas) {
-		current_tex_id = set_uniforms_by_type(p_data, current_tex_id);
+	for (const auto& p_data : p_datas) {
+		current_tex_id = set_uniforms_by_type(p_data.get(), current_tex_id);
 	}
 	
 	// ga_uniform texture_uniform = _program->get_uniform("u_texture");
@@ -107,13 +105,13 @@ void ga_material::bind(const ga_mat4f& view, const ga_mat4f& proj, const ga_mat4
 }
 
 
-void ga_pbr_material::bind(const ga_mat4f& view, const ga_mat4f& proj, const ga_mat4f& transform, std::vector<struct Parameter_Data*>& p_datas) {
+void ga_pbr_material::bind(const ga_mat4f& view, const ga_mat4f& proj, const ga_mat4f& transform, const std::vector<std::unique_ptr<Parameter_Data>>& p_datas) {
 	_program->use();
 	ga_mat4f view_proj = view * proj;
 
 	unsigned int current_tex_id = 0;
-	for (Parameter_Data* p_data : p_datas) {
-		current_tex_id = set_uniforms_by_type(p_data, current_tex_id);
+	for (const auto& p_data : p_datas) {
+		current_tex_id = set_uniforms_by_type(p_data.get(), current_tex_id);
 	}
 	
 	// ga_uniform texture_uniform = _program->get_uniform("u_texture");

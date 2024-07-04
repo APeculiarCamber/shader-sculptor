@@ -9,143 +9,17 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <memory>
 
+#include "ss_data.h"
 #include "../imgui/imgui.h"
+#include "ss_node_types.h"
+#include "ss_pins.h"
+#include "ss_data.h"
 
-
+// TODO: see about these forward declares
 class SS_Graph;
-
-typedef int arr_size;
-
-// Gen are used to specify a generic size, The other GLSL_Vecn/Scalar is what is used in propogation and building...
-enum GLSL_TYPE_ENUM {
-    GLSL_Bool   = 1,
-    GLSL_Int   = 2,
-    GLSL_UInt   = 4,
-    GLSL_Float   = 8,
-    GLSL_Double   = 16,
-    GLSL_AllTypes = 31,
-    // Container
-    GLSL_Scalar  = 32,
-    GLSL_Vec2    = 64,
-    GLSL_Vec3    = 128,
-    GLSL_Vec4    = 256,
-    GLSL_VecN    = GLSL_Vec2 | GLSL_Vec3 | GLSL_Vec4,
-    GLSL_LenMask = GLSL_Scalar | GLSL_Vec2 | GLSL_Vec3 | GLSL_Vec4,
-    GLSL_LenToGenPush = 4,
-    GLSL_GenScalar = 512,
-    GLSL_GenVec2   = 1024,
-    GLSL_GenVec3   = 2048,
-    GLSL_GenVec4   = 4096,
-    GLSL_GenType = GLSL_GenScalar | GLSL_GenVec2 | GLSL_GenVec3 | GLSL_GenVec4,
-    GLSL_GenVec = GLSL_GenVec2 | GLSL_GenVec3 | GLSL_GenVec4,
-
-    // OTHER
-    GLSL_Mat   = 8192,
-    GLSL_TextureSampler2D = 8192,
-    GLSL_TextureSampler3D = 16384,
-    GLSL_TextureSamplerCube = 32768,
-
-    GLSL_Out = 536870912, 
-    GLSL_Array = 2147483648, // size could be embed into unsigned int, but I think it's better to have seperate
-    GLSL_TypeMask = GLSL_Bool | GLSL_Int | GLSL_UInt | GLSL_Float | GLSL_Double | GLSL_TextureSampler2D | GLSL_TextureSampler3D | GLSL_TextureSamplerCube
-};
-
-
-
-struct GLSL_TYPE {
-    GLSL_TYPE() = default;
-    GLSL_TYPE(unsigned int flags, unsigned int size) : type_flags(flags), arr_size(size) {}
-    unsigned int type_flags{};
-    unsigned int arr_size{};
-
-    GLSL_TYPE intersect(const GLSL_TYPE& other) {
-        // intersect with in mind : gentype, genvec, overrides on single, array size,y if array
-        type_flags &= other.type_flags;
-        arr_size = 1;
-        return *this;
-    }
-    GLSL_TYPE IntersectCopy(const GLSL_TYPE& other) const{
-        GLSL_TYPE type;
-        type.type_flags = type_flags & other.type_flags;
-        type.arr_size = 1;
-        return type;
-    }
-
-    inline bool IsSameValueType(const GLSL_TYPE& other) const {
-        return other.type_flags & type_flags & GLSL_TypeMask;
-    }
-
-    inline bool IsMatrix() const {
-        return type_flags & GLSL_Mat;
-    }
-};
-
-
-
-
-
-
-
-/*********************************************************************************
- * ********************************************************************************
- * ********************************************************************************/
-
-struct Base_Pin;
-class Base_GraphNode;
-class Base_OutputPin;
-class Base_InputPin;
 class SS_Boilerplate_Manager;
-enum VECTOR_OPS : unsigned int;
-
-enum NODE_TYPE {
-    NODE_DEFAULT,
-    NODE_BUILTIN,
-    NODE_CONSTANT,
-    NODE_PARAM,
-    NODE_VARYING, 
-    NODE_VECTOR_OP,
-    NODE_CUSTOM,
-    NODE_TERMINAL,
-    NODE_BOILER_VAR
-};
-
-// BASE CLASS FOR NODE PINS
-struct Base_Pin {
-    Base_GraphNode* owner;
-    int index;
-    GLSL_TYPE type;
-    bool bInput;
-    std::string _name;
-
-    ImVec2 get_size(float circle_off, float border);
-    virtual void draw(ImDrawList* drawList, ImVec2 pos, float circle_off, float border) {};
-    virtual ImVec2 get_pin_pos(float circle_off, float border, float* radius) { return {0, 0}; };
-
-    virtual bool has_connections() { return false; }
-    virtual void disconnect_all_from(SS_Graph* g) {};
-
-    virtual ~Base_Pin() = default;
-};
-
-// INPUT PIN CLASS
-struct Base_InputPin : Base_Pin {
-    Base_OutputPin* input = nullptr;
-    void draw(ImDrawList* drawList, ImVec2 pos, float circle_off, float border) override;
-    ImVec2 get_pin_pos(float circle_off, float border, float* radius) override;
-    bool has_connections() override { return input; }
-    void disconnect_all_from(SS_Graph* g) override;
-};
-
-// OUTPUT PIN CLASS
-struct Base_OutputPin : Base_Pin {
-    std::vector<Base_InputPin*> output;
-    std::string get_pin_output_name();
-    void draw(ImDrawList* drawList, ImVec2 pos, float circle_off, float border) override;
-    ImVec2 get_pin_pos(float circle_off, float border, float* radius) override;
-    bool has_connections() override { return not output.empty(); }
-    void disconnect_all_from(SS_Graph* g) override;
-};
 
 
 // BASE CLASS FOR ALL GRAPH NODES, HANDLES MOST OF THE DRAWING
@@ -179,10 +53,10 @@ public:
 
     bool GenerateIntermediateResultFrameBuffers();
     void CompileIntermediateCode(SS_Boilerplate_Manager* bp);
-    void DrawIntermediateResult(unsigned int framebuffer, std::vector<struct Parameter_Data*>& params);
+    void DrawIntermediateResult(unsigned int framebuffer, const std::vector<std::unique_ptr<Parameter_Data>>& params);
 
     unsigned int get_image_texture_id() const { return nodes_rendered_texture; }
-    virtual bool can_draw_intermed_image() { return !output_pins->type.IsMatrix() && output_pins->type.arr_size == 1; ; };
+    virtual bool can_draw_intermed_image() { return !output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; ; };
     ImTextureID bind_and_get_image_texture();
 
     bool can_be_deleted() { return get_node_type() != NODE_TERMINAL; };
@@ -215,8 +89,8 @@ public:
 
     std::string _name;
     
-    Base_InputPin* input_pins = nullptr;
-    Base_OutputPin* output_pins = nullptr;
+    std::vector<Base_InputPin> input_pins;
+    std::vector<Base_OutputPin> output_pins;
     int num_input, num_output;
 
     bool is_display_up = false;
@@ -224,12 +98,6 @@ public:
 };
 
 
-struct Builtin_Node_Data; // forward declare
-struct Constant_Node_Data;
-struct Parameter_Data;
-struct Vector_Op_Node_Data;
-enum GRAPH_PARAM_GENTYPE : unsigned int;
-enum GRAPH_PARAM_TYPE : unsigned int;
 
 class Builtin_GraphNode : public Base_GraphNode {
 public:
@@ -256,10 +124,9 @@ public:
     void* _data;
 
     Constant_Node(Constant_Node_Data& data, int id, ImVec2 pos);
-    ~Constant_Node() override;
     NODE_TYPE get_node_type() override { return NODE_CONSTANT; };
 
-    bool can_draw_intermed_image() override { return !output_pins->type.IsMatrix() && output_pins->type.arr_size == 1; };
+    bool can_draw_intermed_image() override { return !output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; };
 
     std::string request_output(int out_index) override;
     std::string process_for_code() override;
@@ -283,13 +150,14 @@ public:
 };
 
 class Param_Node : public Base_GraphNode {
-public:
+public: // TODO: scoping
+    int _paramID;
     Param_Node(Parameter_Data* data, int id, ImVec2 pos);
     ~Param_Node() override;
 
     NODE_TYPE get_node_type() override { return NODE_PARAM; };
 
-    bool can_draw_intermed_image() override { return !output_pins->type.IsMatrix() && output_pins->type.arr_size == 1; ; };
+    bool can_draw_intermed_image() override { return !output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; ; };
 
 
     std::string request_output(int out_index) override;
@@ -315,8 +183,7 @@ public:
 class Boilerplate_Var_Node : public Base_GraphNode {
 public:
     Boilerplate_Var_Node(Boilerplate_Var_Data data, SS_Boilerplate_Manager* bp, int id, ImVec2 pos);
-    ~Boilerplate_Var_Node() override;;
-    bool can_draw_intermed_image() override { return !output_pins->type.IsMatrix() && output_pins->type.arr_size == 1; };
+    bool can_draw_intermed_image() override { return not output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; };
 
 
     bool frag_node;

@@ -960,7 +960,7 @@ STBTT_DEF unsigned char * stbtt_GetCodepointSDF(const stbtt_fontinfo *info, floa
 //      shape, sample the SDF at each pixel and fill the pixel if the SDF value
 //      is greater than or equal to 180/255. (You'll actually want to antialias,
 //      which is beyond the scope of this example.) Additionally, you can compute
-//      offset outlines (e.g. to stroke the character border inside & outside,
+//      offset outlines (e.g. to stroke the character BORDER inside & outside,
 //      or only outside). For example, to fill outside the character up to 3 SDF
 //      pixels, you would compare against (180-36.0*3)/255 = 72/255. The above
 //      choice of variables maps a range from 5 pixels outside the shape to
@@ -3086,7 +3086,7 @@ static void stbtt__fill_active_edges_new(float *scanline, float *scanline_fill, 
                // the old way of doing this found the intersections with the left & right edges,
                // then used some simple logic to produce up to three segments in sorted order
                // from top-to-bottom. however, this had a problem: if an x edge was epsilon
-               // across the x border, then the corresponding y position might not be distinct
+               // across the x BORDER, then the corresponding y position might not be distinct
                // from the other y segment, and it might ignored as an empty segment. to avoid
                // that, we need to explicitly produce segments based on x positions.
 

@@ -12,10 +12,9 @@
 #include "ss_boilerplate.hpp"
 
 ga_cube_component::ga_cube_component(std::string& source_vs, std::string& source_fs,
-	SS_Boilerplate_Manager* bp)
+	SS_Boilerplate_Manager* bp) : _material(bp->MakeMaterial())
 {
 	_transform.make_identity();
-	_material = bp->make_material();
 	_material->init(source_vs, source_fs);
 
 	static GLfloat color[] =
@@ -205,6 +204,4 @@ ga_cube_component::~ga_cube_component()
 {
 	glDeleteBuffers(5, _vbos);
 	glDeleteVertexArrays(1, &_vao);
-
-	delete _material;
 }
