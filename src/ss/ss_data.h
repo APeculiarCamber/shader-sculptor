@@ -51,7 +51,7 @@ protected:
 } __attribute__((aligned(16)));
 
 /**
- * Variable data for boilerplate nodes and pins
+ * Variable data for boilerplate m_nodes and pins
  */
 struct Boilerplate_Var_Data {
     std::string _name;

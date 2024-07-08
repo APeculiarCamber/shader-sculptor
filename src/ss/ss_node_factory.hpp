@@ -32,7 +32,7 @@ public:
     static std::vector<Parameter_Data*> GetMatchingParamNodes(std::string query, const std::vector<std::unique_ptr<Parameter_Data>>& data_in);
     static std::vector<Boilerplate_Var_Data> GetMatchingBoilerplateNodes(const std::string& query);
 
-    // Build and return dynamically allocated nodes
+    // Build and return dynamically allocated m_nodes
     static class Builtin_GraphNode* BuildBuiltinNode(Builtin_Node_Data& node_data, int id, ImVec2 pos);
     static class Constant_Node* BuildConstantNode(Constant_Node_Data& node_data, int id, ImVec2 pos);
     static class Vector_Op_Node* BuildVecOpNode(Vector_Op_Node_Data& node_data, int id, ImVec2 pos);

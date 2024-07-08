@@ -3754,14 +3754,14 @@ struct stbrp_rect
    int id,w,h,was_packed;
 };
 
-static void stbrp_init_target(stbrp_context *con, int pw, int ph, stbrp_node *nodes, int num_nodes)
+static void stbrp_init_target(stbrp_context *con, int pw, int ph, stbrp_node *m_nodes, int num_nodes)
 {
    con->width  = pw;
    con->height = ph;
    con->x = 0;
    con->y = 0;
    con->bottom_y = 0;
-   STBTT__NOTUSED(nodes);
+   STBTT__NOTUSED(m_nodes);
    STBTT__NOTUSED(num_nodes);
 }
 

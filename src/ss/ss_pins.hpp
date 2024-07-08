@@ -54,7 +54,7 @@ namespace PinOps {
     /**
      * Tracks through previously constructed graph to determine if adding an edge from in_pin to out_pin will result in
      * a cycle.
-     * WARNING: This explicitly assumes nodes are Base_GraphNode. TODO: this is bad coupling.
+     * WARNING: This explicitly assumes m_nodes are Base_GraphNode. TODO: this is bad coupling.
      * @return True iff adding the edge would NOT result a cycle (i.e. it would maintain DAG).
      */
     bool CheckForDAGViolation(Base_InputPin *in_pin, Base_OutputPin *out_pin);

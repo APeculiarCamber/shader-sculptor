@@ -2,7 +2,7 @@
 #define SHADER_SCUPLTOR_SS_NODE_TYPES_HPP
 
 /**
- * Types of SHADER SCULPTOR nodes
+ * Types of SHADER SCULPTOR m_nodes
  */
 enum NODE_TYPE {
     NODE_DEFAULT,

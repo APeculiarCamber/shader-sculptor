@@ -9,15 +9,9 @@
 
 // MAIN MANAGEMENT CLASS OF THE APPLICATION
 class SS_Graph : public ParamDataGraphHook {
-public: // TODO: scope this
+public:
     explicit SS_Graph(SS_Boilerplate_Manager* bp);
-    std::unordered_map<int, std::unique_ptr<Base_GraphNode>> nodes;
-    std::unordered_map<int, std::vector<int>> paramIDsToNodeIDs;
-
-    int current_id = 0;
-
-    unsigned int _main_framebuffer{};
-    
+    ~SS_Graph() override;
    // 0 for input change needed, 1 for no, 2 for output changed needed
    // -1 for failed
    Base_GraphNode* get_node(int id);
@@ -66,33 +60,9 @@ public: // TODO: scope this
     //void Construct_Text_For_Vert(Base_GraphNode* root);
     void GenerateShaderTextAndPropagate();
     void SetIntermediateCodeForNode(std::string intermedCode, Base_GraphNode* node);
-    
-    bool _is_saving = false;
-    bool _credits_up = false;
-    bool _controls_open = false;
-    char save_buf[256]{};
 
-    // Parameters
-    int param_id = 0;
-    void add_parameter();
-
-    ImVec2 _pos_offset = ImVec2(0, 0);
-    ImVec2 _drag_pos_offset = ImVec2(0, 0);
-
-    bool _screen_dragging{};
-    Base_GraphNode* drag_node = nullptr;
-    Base_GraphNode* selected_node = nullptr;
-    Base_Pin* drag_pin;
-    char search_buf[256]{};
-
-    std::vector<std::pair<unsigned int, std::string> > images;
-    char img_buf[256]{};
-
-    SS_Boilerplate_Manager* _bp_manager;
-    std::vector<std::unique_ptr<Parameter_Data>> param_datas;
-
-    std::string _current_frag_code;
-    std::string _current_vert_code;
+    // Add a uniform parameter (or sampled image) to the declaration of the shaders, allowing use of a new uniform node
+    void AddParameter();
 
     void SetFinalShaderTextByConstructOrders(const std::vector<Base_GraphNode *> &vertOrder,
                                              const std::vector<Base_GraphNode *> &fragOrder);
@@ -100,6 +70,40 @@ public: // TODO: scope this
     void PropagateIntermediateVertexCodeToNodes(const std::vector<Base_GraphNode *> &vertOrder);
 
     void PropagateIntermediateFragmentCodeToNodes(const std::vector<Base_GraphNode *> &fragOrder);
+
+protected:
+    std::unordered_map<int, std::unique_ptr<Base_GraphNode>> m_nodes;
+    std::unordered_map<int, std::vector<int>> m_paramIDsToNodeIDs;
+
+    int m_currentNodeID = 0;
+    unsigned int m_mainFramebuffer{};
+
+    bool m_bIsSaving = false;
+    bool m_bCreditsUp = false;
+    bool m_bControlsUp = false;
+    char m_saveBuffer[256]{};
+
+    int m_paramID = 0;
+    ImVec2 m_drawPosOffset = ImVec2(0, 0);
+    ImVec2 m_dragPosOffset = ImVec2(0, 0);
+
+    bool m_bScreenDraggingNow{};
+    char m_searchBuffer[256]{};
+
+    std::vector<std::pair<unsigned int, std::string> > m_images;
+    char m_imgBuffer[256]{};
+
+    std::unique_ptr<SS_Boilerplate_Manager> m_bp_manager;
+    std::vector<std::unique_ptr<Parameter_Data>> m_paramDatas;
+
+    std::string m_currentFragCode;
+    std::string m_currentVertCode;
+
+    //
+    Base_GraphNode* _dragNode = nullptr;
+    Base_GraphNode* _selectedNode = nullptr;
+    Base_Pin* _dragPin;
+
 };
 
 #endif

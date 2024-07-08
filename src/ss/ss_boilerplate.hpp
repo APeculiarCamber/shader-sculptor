@@ -7,12 +7,13 @@
 #include "ss_node.hpp"
 
 /**
- * Base Class for boilerplate nodes and code.
+ * Base Class for boilerplate m_nodes and code.
  * Manages the types of input and output variables that are available and how they are used (such as PBR-based GGX outputs used internally).
  * Class is inherited from to generate different graph types.
  */
 class SS_Boilerplate_Manager {
 public:
+    virtual ~SS_Boilerplate_Manager() = default;
     // make a material of type which will effectively utilize the boilerplate code
     virtual std::unique_ptr<class ga_material> MakeMaterial() = 0;
 
@@ -29,7 +30,7 @@ public:
     // Get the terminal fragment code
     virtual std::string GetFragTerminalBoilerplateCode() = 0;
 
-    // Get descriptions of the nodes which shaders can use (uniforms)
+    // Get descriptions of the m_nodes which shaders can use (uniforms)
     const std::vector<Boilerplate_Var_Data>& GetUsableVariables() const;
 
     // Get the INPUT pins required for the final vertex computations
@@ -40,7 +41,7 @@ public:
     std::string GetIntermediateResultCodeForVar(std::string& var_name) const;
 
 
-    // NOTE: This class does not own these nodes, hence the raw pointer rather than a unique pointer
+    // NOTE: This class does not own these m_nodes, hence the raw pointer rather than a unique pointer
     void SetTerminalNodes(Terminal_Node* vertNode, Terminal_Node* frNode);
     Terminal_Node* GetTerminalFragNode() { return fragNode; }
     Terminal_Node* GetTerminalVertexNode() { return vertexNode; }

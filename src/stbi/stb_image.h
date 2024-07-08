@@ -18,7 +18,7 @@
 
    QUICK NOTES:
       Primarily of interest to game developers and other people who can
-          avoid problematic images and only need the trivial interface
+          avoid problematic m_images and only need the trivial interface
 
       JPEG baseline & progressive (12 bpc/arithmetic not supported, same as stock IJG lib)
       PNG 1/2/4/8/16-bit-per-channel
@@ -177,7 +177,7 @@ RECENT REVISION HISTORY:
 // to avoid compiling these strings at all, and STBI_FAILURE_USERMSG to get slightly
 // more user-friendly ones.
 //
-// Paletted PNG, BMP, GIF, and PIC images are automatically depalettized.
+// Paletted PNG, BMP, GIF, and PIC m_images are automatically depalettized.
 //
 // To query the width, height and component count of an image without having to
 // decode the full file, you can use the stbi_info family of functions:
@@ -200,7 +200,7 @@ RECENT REVISION HISTORY:
 // which defaults to 2**24 = 16777216 pixels. Due to the above memory limit,
 // the only way to have an image with such dimensions load correctly
 // is for it to have a rather extreme aspect ratio. Either way, the
-// assumption here is that such larger images are likely to be malformed
+// assumption here is that such larger m_images are likely to be malformed
 // or malicious. If you do need to load an image with individual dimensions
 // larger than that, and it still fits in the overall size limit, you can
 // #define STBI_MAX_DIMENSIONS on your own to be something larger.
@@ -275,7 +275,7 @@ RECENT REVISION HISTORY:
 //
 // HDR image support   (disable by defining STBI_NO_HDR)
 //
-// stb_image supports loading HDR images in general, and currently the Radiance
+// stb_image supports loading HDR m_images in general, and currently the Radiance
 // .HDR file format specifically. You can still load any file through the existing
 // interface; if you attempt to load an HDR file, it will be automatically remapped
 // to LDR, assuming gamma 2.2 and an arbitrary scale factor defaulting to 1;
@@ -292,7 +292,7 @@ RECENT REVISION HISTORY:
 //
 //    float *data = stbi_loadf(filename, &x, &y, &n, 0);
 //
-// If you load LDR images through this interface, those images will
+// If you load LDR m_images through this interface, those m_images will
 // be promoted to floating point values, run through the inverse of
 // constants corresponding to the above:
 //
@@ -317,7 +317,7 @@ RECENT REVISION HISTORY:
 //
 // Call stbi_set_unpremultiply_on_load(1) as well to force a divide per
 // pixel to remove any premultiplied alpha *only* if the image file explicitly
-// says there's premultiplied data (currently only happens in iPhone images,
+// says there's premultiplied data (currently only happens in iPhone m_images,
 // and only if iPhone convert-to-rgb processing is on).
 //
 // ===========================================================================
@@ -355,7 +355,7 @@ RECENT REVISION HISTORY:
 //   - If you use STBI_NO_PNG (or _ONLY_ without PNG), and you still
 //     want the zlib decoder to be available, #define STBI_SUPPORT_ZLIB
 //
-//  - If you define STBI_MAX_DIMENSIONS, stb_image will reject images greater
+//  - If you define STBI_MAX_DIMENSIONS, stb_image will reject m_images greater
 //    than that size (in either width or height) without further processing.
 //    This is to let programs in the wild set an upper bound to prevent
 //    denial-of-service attacks on untrusted data, as one could generate a
@@ -398,7 +398,7 @@ extern "C" {
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// PRIMARY API - works on images of any type
+// PRIMARY API - works on m_images of any type
 //
 
 //
@@ -507,14 +507,14 @@ STBIDEF int      stbi_is_16_bit_from_file(FILE *f);
 // unpremultiplication. results are undefined if the unpremultiply overflow.
 STBIDEF void stbi_set_unpremultiply_on_load(int flag_true_if_should_unpremultiply);
 
-// indicate whether we should process iphone images back to canonical format,
+// indicate whether we should process iphone m_images back to canonical format,
 // or just pass them through "as-is"
 STBIDEF void stbi_convert_iphone_png_to_rgb(int flag_true_if_should_convert);
 
 // flip the image vertically, so the first pixel in the output array is the bottom left
 STBIDEF void stbi_set_flip_vertically_on_load(int flag_true_if_should_flip);
 
-// as above, but only applies to images loaded on the thread that calls the function
+// as above, but only applies to m_images loaded on the thread that calls the function
 // this function is only available if your compiler supports thread-local variables;
 // calling it will fail to link if your compiler doesn't
 STBIDEF void stbi_set_unpremultiply_on_load_thread(int flag_true_if_should_unpremultiply);
@@ -797,7 +797,7 @@ static int stbi__sse2_available(void)
 //
 //  stbi__context struct and start_xxx functions
 
-// stbi__context structure is our basic context used by all images, so it
+// stbi__context structure is our basic context used by all m_images, so it
 // contains all the IO context, plus some basic image information
 typedef struct
 {
@@ -4269,7 +4269,7 @@ static int stbi__parse_huffman_block(stbi__zbuf *a)
             zout = a->zout;
          }
          p = (stbi_uc *) (zout - dist);
-         if (dist == 1) { // run of one byte; common in images.
+         if (dist == 1) { // run of one byte; common in m_images.
             stbi_uc v = *p;
             if (len) { do *zout++ = v; while (--len); }
          } else {
@@ -5106,7 +5106,7 @@ static int stbi__parse_png_file(stbi__png *z, int scan, int req_comp)
                if (z->depth == 16) {
                   for (k = 0; k < s->img_n; ++k) tc16[k] = (stbi__uint16)stbi__get16be(s); // copy the values as-is
                } else {
-                  for (k = 0; k < s->img_n; ++k) tc[k] = (stbi_uc)(stbi__get16be(s) & 255) * stbi__depth_scale_table[z->depth]; // non 8-bit images will be larger
+                  for (k = 0; k < s->img_n; ++k) tc[k] = (stbi_uc)(stbi__get16be(s) & 255) * stbi__depth_scale_table[z->depth]; // non 8-bit m_images will be larger
                }
             }
             break;
@@ -5760,7 +5760,7 @@ static int stbi__tga_test(stbi__context *s)
    if ( stbi__get16le(s) < 1 ) goto errorEnd;      //   test width
    if ( stbi__get16le(s) < 1 ) goto errorEnd;      //   test height
    sz = stbi__get8(s);   //   bits per pixel
-   if ( (tga_color_type == 1) && (sz != 8) && (sz != 16) ) goto errorEnd; // for colormapped images, bpp is size of an index
+   if ( (tga_color_type == 1) && (sz != 8) && (sz != 16) ) goto errorEnd; // for colormapped m_images, bpp is size of an index
    if ( (sz != 8) && (sz != 15) && (sz != 16) && (sz != 24) && (sz != 32) ) goto errorEnd;
 
    res = 1; // if we got this far, everything's good and we can return 1 instead of 0
@@ -5786,7 +5786,7 @@ static void stbi__tga_read_rgb16(stbi__context *s, stbi_uc* out)
 
    // some people claim that the most significant bit might be used for alpha
    // (possibly if an alpha-bit is set in the "image descriptor byte")
-   // but that only made 16bit test images completely translucent..
+   // but that only made 16bit test m_images completely translucent..
    // so let's treat all 15 and 16bit TGAs as RGB with no alpha.
 }
 
@@ -7523,7 +7523,7 @@ static int      stbi__pnm_info(stbi__context *s, int *x, int *y, int *comp)
 
    maxv = stbi__pnm_getinteger(s, &c);  // read max value
    if (maxv > 65535)
-      return stbi__err("max value > 65535", "PPM image supports only 8-bit and 16-bit images");
+      return stbi__err("max value > 65535", "PPM image supports only 8-bit and 16-bit m_images");
    else if (maxv > 255)
       return 16;
    else
@@ -7758,7 +7758,7 @@ STBIDEF int stbi_is_16_bit_from_callbacks(stbi_io_callbacks const *c, void *user
               remove duplicate typedef
       1.36  (2014-06-03)
               convert to header file single-file library
-              if de-iphone isn't set, load iphone images color-swapped instead of returning NULL
+              if de-iphone isn't set, load iphone m_images color-swapped instead of returning NULL
       1.35  (2014-05-27)
               various warnings
               fix broken STBI_SIMD path

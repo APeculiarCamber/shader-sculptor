@@ -130,11 +130,11 @@ struct stbrp_rect
 STBRP_DEF void stbrp_init_target (stbrp_context *context, int width, int height, stbrp_node *nodes, int num_nodes);
 // Initialize a rectangle packer to:
 //    pack a rectangle that is 'width' by 'height' in dimensions
-//    using temporary storage provided by the array 'nodes', which is 'num_nodes' long
+//    using temporary storage provided by the array 'm_nodes', which is 'num_nodes' long
 //
 // You must call this function every time you start packing into a new target.
 //
-// There is no "shutdown" function. The 'nodes' memory must stay valid for
+// There is no "shutdown" function. The 'm_nodes' memory must stay valid for
 // the following stbrp_pack_rects() call (or calls), but can be freed after
 // the call (or calls) finish.
 //
@@ -188,7 +188,7 @@ struct stbrp_context
    int num_nodes;
    stbrp_node *active_head;
    stbrp_node *free_head;
-   stbrp_node extra[2]; // we allocate two extra nodes so optimal user-node-count is 'width' not 'width+2'
+   stbrp_node extra[2]; // we allocate two extra m_nodes so optimal user-node-count is 'width' not 'width+2'
 };
 
 #ifdef __cplusplus
@@ -249,7 +249,7 @@ STBRP_DEF void stbrp_setup_allow_out_of_mem(stbrp_context *context, int allow_ou
       context->align = 1;
    else {
       // if it's not ok to run out of memory, then quantize the widths
-      // so that num_nodes is always enough nodes.
+      // so that num_nodes is always enough m_nodes.
       //
       // I.e. num_nodes * align >= width
       //                  align >= width / num_nodes
@@ -473,7 +473,7 @@ static stbrp__findresult stbrp__skyline_pack_rectangle(stbrp_context *context, i
    context->free_head = node->next;
 
    // insert the new node into the right starting point, and
-   // let 'cur' point to the remaining nodes needing to be
+   // let 'cur' point to the remaining m_nodes needing to be
    // stiched back in
 
    cur = *res.prev_link;
@@ -486,7 +486,7 @@ static stbrp__findresult stbrp__skyline_pack_rectangle(stbrp_context *context, i
       *res.prev_link = node;
    }
 
-   // from here, traverse cur and free the nodes, until we get to one
+   // from here, traverse cur and free the m_nodes, until we get to one
    // that shouldn't be freed
    while (cur->next && cur->next->x <= res.x + width) {
       stbrp_node *next = cur->next;
