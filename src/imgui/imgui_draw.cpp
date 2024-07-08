@@ -459,7 +459,7 @@ void ImDrawList::AddDrawCmd()
     CmdBuffer.push_back(draw_cmd);
 }
 
-// Pop trailing draw command (used before merging or presenting to user)
+// Pop trailing Draw command (used before merging or presenting to user)
 // Note that this leaves the ImDrawList in a state unfit for further commands, as most code assume that CmdBuffer.Size > 0 && CmdBuffer.back().UserCallback == NULL
 void ImDrawList::_PopUnusedDrawCmd()
 {
@@ -492,7 +492,7 @@ void ImDrawList::AddCallback(ImDrawCallback callback, void* callback_data)
 #define ImDrawCmd_HeaderCopy(CMD_DST, CMD_SRC)          (memcpy(CMD_DST, CMD_SRC, ImDrawCmd_HeaderSize))    // Copy ClipRect, TextureId, VtxOffset
 #define ImDrawCmd_AreSequentialIdxOffset(CMD_0, CMD_1)  (CMD_0->IdxOffset + CMD_0->ElemCount == CMD_1->IdxOffset)
 
-// Try to merge two last draw commands
+// Try to merge two last Draw commands
 void ImDrawList::_TryMergeDrawCmds()
 {
     IM_ASSERT_PARANOID(CmdBuffer.Size > 0);
@@ -725,7 +725,7 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
 
     const bool closed = (flags & ImDrawFlags_Closed) != 0;
     const ImVec2 opaque_uv = _Data->TexUvWhitePixel;
-    const int count = closed ? points_count : points_count - 1; // The number of line segments we need to draw
+    const int count = closed ? points_count : points_count - 1; // The number of line segments we need to Draw
     const bool thick_line = (thickness > _FringeScale);
 
     if (Flags & ImDrawListFlags_AntiAliasedLines)
@@ -739,8 +739,8 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
         const int integer_thickness = (int)thickness;
         const float fractional_thickness = thickness - integer_thickness;
 
-        // Do we want to draw this line using a texture?
-        // - For now, only draw integer-width lines using textures to avoid issues with the way scaling occurs, could be improved.
+        // Do we want to Draw this line using a texture?
+        // - For now, only Draw integer-width lines using textures to avoid issues with the way scaling occurs, could be improved.
         // - If AA_SIZE is not 1.0f we cannot use the texture path.
         const bool use_texture = (Flags & ImDrawListFlags_AntiAliasedLinesUseTex) && (integer_thickness < IM_DRAWLIST_TEX_LINES_WIDTH_MAX) && (fractional_thickness <= 0.00001f) && (AA_SIZE == 1.0f);
 
@@ -775,7 +775,7 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
             // [PATH 1] Texture-based lines (thick or non-thick)
             // [PATH 2] Non texture-based lines (non-thick)
 
-            // The width of the geometry we need to draw - this is essentially <thickness> pixels for the line itself, plus "one pixel" for AA.
+            // The width of the geometry we need to Draw - this is essentially <thickness> pixels for the line itself, plus "one pixel" for AA.
             // - In the texture-based path, we don't use AA_SIZE here because the +1 is tied to the generated texture
             //   (see ImFontAtlasBuildRenderLinesTexData() function), and so alternate values won't work without changes to that code.
             // - In the non texture-based paths, we would allow AA_SIZE to potentially be != 1.0f with a patch (e.g. fringe_scale patch to
@@ -870,7 +870,7 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
         }
         else
         {
-            // [PATH 2] Non texture-based lines (thick): we need to draw the solid line core and thus require four vertices per point
+            // [PATH 2] Non texture-based lines (thick): we need to Draw the solid line core and thus require four vertices per point
             const float half_inner_thickness = (thickness - AA_SIZE) * 0.5f;
 
             // If line is not closed, the first and last points need to be generated differently as there are no normals to blend
@@ -1156,7 +1156,7 @@ void ImDrawList::_PathArcToN(const ImVec2& center, float radius, float a_min, fl
     }
 
     // Note that we are adding a point at both a_min and a_max.
-    // If you are trying to draw a full closed circle you don't want the overlapping points!
+    // If you are trying to Draw a full closed circle you don't want the overlapping points!
     _Path.reserve(_Path.Size + (num_segments + 1));
     for (int i = 0; i <= num_segments; i++)
     {
@@ -1739,11 +1739,11 @@ void ImDrawListSplitter::Merge(ImDrawList* draw_list)
         if (ch._CmdBuffer.Size > 0 && last_cmd != NULL)
         {
             // Do not include ImDrawCmd_AreSequentialIdxOffset() in the compare as we rebuild IdxOffset values ourselves.
-            // Manipulating IdxOffset (e.g. by reordering draw commands like done by RenderDimmedBackgroundBehindWindow()) is not supported within a splitter.
+            // Manipulating IdxOffset (e.g. by reordering Draw commands like done by RenderDimmedBackgroundBehindWindow()) is not supported within a splitter.
             ImDrawCmd* next_cmd = &ch._CmdBuffer[0];
             if (ImDrawCmd_HeaderCompare(last_cmd, next_cmd) == 0 && last_cmd->UserCallback == NULL && next_cmd->UserCallback == NULL)
             {
-                // Merge previous channel last draw command with current channel first draw command if matching.
+                // Merge previous channel last Draw command with current channel first Draw command if matching.
                 last_cmd->ElemCount += next_cmd->ElemCount;
                 idx_offset += next_cmd->ElemCount;
                 ch._CmdBuffer.erase(ch._CmdBuffer.Data); // FIXME-OPT: Improve for multiple merges.
@@ -1773,7 +1773,7 @@ void ImDrawListSplitter::Merge(ImDrawList* draw_list)
     }
     draw_list->_IdxWritePtr = idx_write;
 
-    // Ensure there's always a non-callback draw command trailing the command-buffer
+    // Ensure there's always a non-callback Draw command trailing the command-buffer
     if (draw_list->CmdBuffer.Size == 0 || draw_list->CmdBuffer.back().UserCallback != NULL)
         draw_list->AddDrawCmd();
 

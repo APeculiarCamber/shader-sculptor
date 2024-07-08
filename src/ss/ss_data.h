@@ -1,7 +1,3 @@
-//
-// Created by idemaj on 7/3/24.
-//
-
 #ifndef SHADER_SCUPLTOR_SS_DATA_H
 #define SHADER_SCUPLTOR_SS_DATA_H
 
@@ -9,7 +5,7 @@
 
 #include <vector>
 #include <string>
-#include "ss_node_types.h"
+#include "ss_node_types.hpp"
 
 // LISTENER PATTERN!
 class ParamDataGraphHook {
@@ -21,6 +17,28 @@ public:
 };
 
 class Parameter_Data {
+public:
+    Parameter_Data(GRAPH_PARAM_TYPE type, GRAPH_PARAM_GENTYPE gentype, unsigned arrSize, int id, ParamDataGraphHook* gHook);
+    void MakeData(ParamDataGraphHook* graphHook, bool reset_mem = true);
+    bool UpdateGentype(ParamDataGraphHook* graphHook, GRAPH_PARAM_GENTYPE gentype);
+    bool UpdateType(ParamDataGraphHook* graphHook, GRAPH_PARAM_TYPE type);
+    void UpdateName(ParamDataGraphHook* graphHook, const char* newParamName);
+
+    __attribute__((unused)) bool IsMatrix() const;
+    __attribute__((unused)) unsigned GetLength() const;
+
+    const char* GetData() const { return m_dataContainer; }
+    const char* GetName() const { return m_paramName; }
+    int GetID() const { return m_paramID; }
+    GRAPH_PARAM_TYPE GetParamType() const { return m_type; };
+    GRAPH_PARAM_GENTYPE GetParamGenType() const { return m_gentype; };
+    GLSL_TYPE GetType() const;
+
+    int GetTypeAsDropboxIndex() const;
+    int GetGentypeAsDropboxIndex() const;
+
+    void Draw(ParamDataGraphHook* graphHook);
+
 protected:
     GRAPH_PARAM_TYPE m_type;
     GRAPH_PARAM_GENTYPE m_gentype;
@@ -28,32 +46,9 @@ protected:
     int m_paramID;
 
     char m_paramName[64];
-    // TODO: align this
-    char data_container[16 * 8];
+    char m_dataContainer[16 * 8];
 
-public:
-    Parameter_Data(GRAPH_PARAM_TYPE type, GRAPH_PARAM_GENTYPE gentype, unsigned arrSize, int id, ParamDataGraphHook* gHook);
-    void make_data(ParamDataGraphHook* graphHook, bool reset_mem = true);
-    bool update_gentype(ParamDataGraphHook* graphHook, GRAPH_PARAM_GENTYPE gentype);
-    bool update_type(ParamDataGraphHook* graphHook, GRAPH_PARAM_TYPE type);
-    void update_name(ParamDataGraphHook* graphHook, const char* newParamName);
-
-    __attribute__((unused)) bool is_mat() const;
-    __attribute__((unused)) unsigned get_len() const;
-
-    const char* GetData() const { return data_container; }
-    const char* GetName() const { return m_paramName; }
-    int GetID() const { return m_paramID; }
-    GRAPH_PARAM_TYPE GetParamType() const { return m_type; };
-    GRAPH_PARAM_GENTYPE GetParamGenType() const { return m_gentype; };
-    GLSL_TYPE GetType() const;
-
-    int type_to_dropbox_index() const;
-    int gentype_to_dropbox_index() const;
-
-    void draw(ParamDataGraphHook* graph);
-};
-
+} __attribute__((aligned(16)));
 
 /**
  * Variable data for boilerplate nodes and pins

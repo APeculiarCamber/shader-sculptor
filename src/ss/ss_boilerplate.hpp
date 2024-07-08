@@ -7,9 +7,9 @@
 #include "ss_node.hpp"
 
 /**
- * @brief Base Class for boilerplate nodes and code.
+ * Base Class for boilerplate nodes and code.
+ * Manages the types of input and output variables that are available and how they are used (such as PBR-based GGX outputs used internally).
  * Class is inherited from to generate different graph types.
- * 
  */
 class SS_Boilerplate_Manager {
 public:
@@ -40,7 +40,7 @@ public:
     std::string GetIntermediateResultCodeForVar(std::string& var_name) const;
 
 
-    // NOTE: This class does not own these nodes, hence the raw pointer rather than a unique pointer, TODO: pending refactor
+    // NOTE: This class does not own these nodes, hence the raw pointer rather than a unique pointer
     void SetTerminalNodes(Terminal_Node* vertNode, Terminal_Node* frNode);
     Terminal_Node* GetTerminalFragNode() { return fragNode; }
     Terminal_Node* GetTerminalVertexNode() { return vertexNode; }

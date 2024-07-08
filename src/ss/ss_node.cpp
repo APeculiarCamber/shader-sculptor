@@ -7,12 +7,11 @@
 
 #include "../graphics/ga_cube_component.h"
 #include "../graphics/ga_material.h"
-#include "ss_pins.h"
+#include "ss_pins.hpp"
 #include "ss_boilerplate.hpp"
 
 Base_GraphNode::~Base_GraphNode() {
-    // TODO: non-virtual version of the most common canIntermed function
-    if (!output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1) {
+    if (nodes_rendered_texture != NODE_TEXTURE_NULL) {
         glDeleteTextures(1, &nodes_rendered_texture);
         glDeleteTextures(1, &nodes_depth_texture);
     }
@@ -64,13 +63,13 @@ inline bool is_gentype(unsigned int type) {
     return (type & GLSL_GenType);
 }
 
-void Base_GraphNode::propogate_gentype_in_subgraph(Base_Pin* start_pin, unsigned int len_type) {
+void Base_GraphNode::PropogateGentypeInSubgraph(Base_Pin* start_pin, unsigned int type) {
     std::unordered_set<int> processed_ids;      // only prop length
-    propogate_gentype_in_subgraph(start_pin, len_type & GLSL_LenMask, processed_ids);
+    PropogateGentypeInSubgraph_Rec(start_pin, type & GLSL_LenMask, processed_ids);
 }
 
-void Base_GraphNode::propogate_gentype_in_subgraph(Base_Pin* start_pin, 
-    unsigned int len_type, std::unordered_set<int>& processed_ids) {
+void Base_GraphNode::PropogateGentypeInSubgraph_Rec(Base_Pin* start_pin,
+                                                    unsigned int type, std::unordered_set<int>& processed_ids) {
     // if we reach non-generic parts
     if (!is_gentype(start_pin->type.type_flags)) return;
 
@@ -82,54 +81,54 @@ void Base_GraphNode::propogate_gentype_in_subgraph(Base_Pin* start_pin,
         if (!is_gentype(input_pins[i].type.type_flags)) continue;
 
         // Intersect generic part of pin with restrictive
-        unsigned int gen_len_intersect = len_type & GLSL_LenMask;
+        unsigned int gen_len_intersect = type & GLSL_LenMask;
         input_pins[i].type.type_flags &= (~GLSL_LenMask); // clear len mask
         input_pins[i].type.type_flags |= gen_len_intersect; // set len mask
 
         if (not input_pins[i].input) continue;
-        input_pins[i].input->owner->propogate_gentype_in_subgraph(
-            input_pins[i].input, len_type, processed_ids);
+        input_pins[i].input->owner->PropogateGentypeInSubgraph_Rec(
+                input_pins[i].input, type, processed_ids);
     } 
     // OUTPUT
     for (int o = 0; o < num_output; ++o) {
         if (!is_gentype(output_pins[o].type.type_flags)) continue;
 
         // Intersect generic part of pin with restrictive
-        unsigned int gen_len_intersect = len_type & GLSL_LenMask;
+        unsigned int gen_len_intersect = type & GLSL_LenMask;
         output_pins[o].type.type_flags &= ~GLSL_LenMask; // clear len mask
         output_pins[o].type.type_flags |= gen_len_intersect; // set len mask
 
         for (Base_InputPin* i_pin : output_pins[o].output) {
             if (!i_pin) continue;
-            i_pin->owner->propogate_gentype_in_subgraph(i_pin, len_type, processed_ids);
+            i_pin->owner->PropogateGentypeInSubgraph_Rec(i_pin, type, processed_ids);
         }
     }
 }
 
-void Base_GraphNode::propogate_build_dirty() { 
+void Base_GraphNode::PropogateBuildDirty() {
     is_build_dirty = true;
     for (int o = 0; o < num_output; ++o) {
         for (Base_InputPin* i_pin : output_pins[o].output)
-            i_pin->owner->propogate_build_dirty();
+            i_pin->owner->PropogateBuildDirty();
     }
 }
 
 
 // RETURNS LEN (NON-GEN) SET FOR MOST RESTRICTIVE GENTYPES
     // If start_pin is non-generic, only LEN will be set
-unsigned int Base_GraphNode::get_most_restrictive_gentype_in_subgraph(Base_Pin* start_pin) {
+unsigned int Base_GraphNode::GetMostRestrictiveGentypeInSubgraph(Base_Pin* start_pin) {
     if (!is_gentype(start_pin->type.type_flags)) return start_pin->type.type_flags & GLSL_LenMask;
 
     std::unordered_set<int> processed_ids;
     // Intersect only the len-not-gen-type portion of the pin type
     unsigned int start_type = (start_pin->type.type_flags & GLSL_GenType) >> GLSL_LenToGenPush;
-    unsigned int restrict_type = get_most_restrictive_gentype_in_subgraph(start_pin, processed_ids);
+    unsigned int restrict_type = GetMostRestrictiveGentypeInSubgraph_Rec(start_pin, processed_ids);
     restrict_type &= start_type;
     return restrict_type;
 }
 
 
-unsigned int Base_GraphNode::get_most_restrictive_gentype_in_subgraph(Base_Pin* start_pin, std::unordered_set<int>& processed_ids) {
+unsigned int Base_GraphNode::GetMostRestrictiveGentypeInSubgraph_Rec(Base_Pin* start_pin, std::unordered_set<int>& processed_ids) {
     if (!is_gentype(start_pin->type.type_flags)) return start_pin->type.type_flags & GLSL_LenMask;
     
     // Stop if processed already and add to processed
@@ -146,7 +145,7 @@ unsigned int Base_GraphNode::get_most_restrictive_gentype_in_subgraph(Base_Pin* 
         Base_OutputPin* o_pin = input_pins[i].input;
         if (!o_pin) continue; // output pin exists
 
-        unsigned int res_type = get_most_restrictive_gentype_in_subgraph(o_pin, processed_ids);
+        unsigned int res_type = GetMostRestrictiveGentypeInSubgraph_Rec(o_pin, processed_ids);
         most_res_gen_type &= res_type; // Intersect only for len, non-gen
     } 
     // OUTPUT
@@ -156,7 +155,7 @@ unsigned int Base_GraphNode::get_most_restrictive_gentype_in_subgraph(Base_Pin* 
         for (Base_InputPin* i_pin : output_pins[o].output) {
             if (!i_pin) continue; // pin exists
 
-            unsigned int res_type = get_most_restrictive_gentype_in_subgraph(i_pin, processed_ids);
+            unsigned int res_type = GetMostRestrictiveGentypeInSubgraph_Rec(i_pin, processed_ids);
             most_res_gen_type &= res_type; // Intersect only for len, non-gen
         }
     }
@@ -260,10 +259,10 @@ void Base_GraphNode::SetShaderCode(const std::string& frag_shad, const std::stri
 // Collect component sizes
     // size and pin position should be cached
 // Draw rect
-// draw name and line
-// draw input pins with function
-// draw output pins with function
-// draw output pin bezier
+// Draw name and line
+// Draw input pins with function
+// Draw output pins with function
+// Draw output pin bezier
 
 const float BORDER = 5;
 float mid_pin_col = 40;
@@ -277,7 +276,7 @@ float pin_y_step = 2;
 unsigned rect_color = 0xff444444;
 float rect_rounding = 10;
 
-void Base_GraphNode::set_bounds(float scale) {
+void Base_GraphNode::SetBounds(float scale) {
     // set main name size
     name_size = ImGui::CalcTextSize(_name.c_str());
 
@@ -285,12 +284,12 @@ void Base_GraphNode::set_bounds(float scale) {
     float in_x_max = 0, out_x_max = 0;
     float in_y = 0, out_y = 0;
     for (int i = 0; i < num_input; ++i) {
-        in_pin_sizes.push_back(input_pins[i].get_size(pin_circle_offset, pin_border));
+        in_pin_sizes.push_back(input_pins[i].GetSize(pin_circle_offset, pin_border));
         in_x_max = std::max(in_x_max, in_pin_sizes.back().x);
         in_y += in_pin_sizes.back().y + pin_y_step;
     }
     for (int o = 0; o < num_output; ++o) {
-        out_pin_sizes.push_back(output_pins[o].get_size(pin_circle_offset, pin_border));
+        out_pin_sizes.push_back(output_pins[o].GetSize(pin_circle_offset, pin_border));
         out_x_max = std::max(out_x_max, out_pin_sizes.back().x);
         out_y += out_pin_sizes.back().y + pin_y_step;
     }
@@ -316,7 +315,7 @@ void Base_GraphNode::set_bounds(float scale) {
     }
 
     // intermediate
-    if (can_draw_intermed_image()) {
+    if (CanDrawIntermedImage()) {
         display_panel_rel_pos.x = 0;
         display_panel_rel_pos.y = rect_size.y;
         display_panel_rel_size.x = rect_size.x;
@@ -326,13 +325,13 @@ void Base_GraphNode::set_bounds(float scale) {
     }
 }
 
-ImTextureID Base_GraphNode::bind_and_get_image_texture() {
+ImTextureID Base_GraphNode::BindAndGetImageTexture() {
     glBindTexture(GL_TEXTURE0, nodes_rendered_texture);
     return (void*)(intptr_t)nodes_rendered_texture;
 }
 
 
-bool Base_GraphNode::can_connect_pins(Base_InputPin* in_pin, Base_OutputPin* out_pin) {
+bool Base_GraphNode::CanConnectPins(Base_InputPin* in_pin, Base_OutputPin* out_pin) {
     bool size_equal = in_pin->type.arr_size == out_pin->type.arr_size;
     unsigned type_intersect = in_pin->type.type_flags & out_pin->type.type_flags;
 
@@ -342,67 +341,67 @@ bool Base_GraphNode::can_connect_pins(Base_InputPin* in_pin, Base_OutputPin* out
 }
 
 
-void Base_GraphNode::draw(ImDrawList* list, ImVec2 pos_offset, bool is_hover) {
+void Base_GraphNode::Draw(ImDrawList* drawList, ImVec2 pos_offset, bool is_hover) {
     // _pos should be middle of node, but this pos is actually the upper left
     ImVec2 pos = _pos - ImVec2(rect_size.x * 0.5f, rect_size.y * 0.5f) + pos_offset;
 
     // Draw main rect
     unsigned int col = is_hover ? 0xffff4444 : 0xffaa4444;
-    list->AddRectFilled(pos, pos + rect_size, col, rect_rounding);
-    list->AddText(pos + ImVec2(BORDER, BORDER), 0xffffffff, _name.c_str());
-    list->AddLine(pos + ImVec2(0, name_size.y + BORDER), pos + ImVec2(rect_size.x, name_size.y + BORDER), 0xffffffff, 2.0f);
+    drawList->AddRectFilled(pos, pos + rect_size, col, rect_rounding);
+    drawList->AddText(pos + ImVec2(BORDER, BORDER), 0xffffffff, _name.c_str());
+    drawList->AddLine(pos + ImVec2(0, name_size.y + BORDER), pos + ImVec2(rect_size.x, name_size.y + BORDER), 0xffffffff, 2.0f);
 
     // For each input, ask it to be drawn at proper location
     for (int i = 0; i < num_input; ++i) {
-        input_pins[i].draw(list, in_pin_rel_pos[i] + pos, pin_circle_offset, pin_border);
+        input_pins[i].Draw(drawList, in_pin_rel_pos[i] + pos, pin_circle_offset, pin_border);
     }
 
     // For each output, ask it to be drawn at proper location
     for (int o = 0; o < num_output; ++o) {
-        output_pins[o].draw(list, out_pin_rel_pos[o] + pos, pin_circle_offset, pin_border);
+        output_pins[o].Draw(drawList, out_pin_rel_pos[o] + pos, pin_circle_offset, pin_border);
     }
 
-    if (can_draw_intermed_image()) {
-        list->AddRectFilled(display_panel_rel_pos + pos, display_panel_rel_pos + display_panel_rel_size + pos, 
+    if (CanDrawIntermedImage()) {
+        drawList->AddRectFilled(display_panel_rel_pos + pos, display_panel_rel_pos + display_panel_rel_size + pos,
             is_display_up ? 0xffffffff : 0xaaaaaaaa, 7);
         if (is_display_up) {
             ImVec2 display_min = display_panel_rel_pos + ImVec2(0, display_panel_rel_size.y); 
             ImVec2 display_max = display_min + ImVec2(rect_size.x, rect_size.x);
 
-            list->AddImage(bind_and_get_image_texture(), display_min + pos, display_max + pos);
+            drawList->AddImage(BindAndGetImageTexture(), display_min + pos, display_max + pos);
         }
     }
 }
 
-void Base_GraphNode::draw_output_connects(ImDrawList* list, ImVec2 offset) {
+void Base_GraphNode::DrawOutputConnects(ImDrawList* drawList, ImVec2 offset) {
     for (int o = 0; o < num_output; ++o) {
         Base_OutputPin* o_pin = &output_pins[o];
-        ImU32 color = SS_Parser::type_to_color(o_pin->type);
+        ImU32 color = SS_Parser::GLSLTypeToColor(o_pin->type);
 
         for (Base_InputPin* i_pin : o_pin->output) {
             float r;
-            ImVec2 o_pos = o_pin->get_pin_pos(pin_circle_offset, pin_border, &r);
+            ImVec2 o_pos = o_pin->GetPinPos(pin_circle_offset, pin_border, &r);
             o_pos = o_pos - ImVec2(r / 2, r / 2) + offset;
-            ImVec2 i_pos = i_pin->get_pin_pos(pin_circle_offset, pin_border, &r);
+            ImVec2 i_pos = i_pin->GetPinPos(pin_circle_offset, pin_border, &r);
             i_pos = i_pos - ImVec2(r / 2, r / 2) + offset;
-            list->AddBezierCurve(o_pos, o_pos + ImVec2(50, 0), i_pos - ImVec2(50, 0), i_pos, color, 3);
+            drawList->AddBezierCurve(o_pos, o_pos + ImVec2(50, 0), i_pos - ImVec2(50, 0), i_pos, color, 3);
         }
     }
 }
 
-bool Base_GraphNode::is_hovering(ImVec2 m) {
+bool Base_GraphNode::IsHovering(ImVec2 mouse_pos) {
     ImVec2 minn = _pos - ImVec2(rect_size.x * .5f, rect_size.y * .5f);
     ImVec2 maxx = _pos + ImVec2(rect_size.x * .5f, rect_size.y * .5f);
     if (is_display_up)
         maxx.y += rect_size.x;
-    return (m.x > minn.x && m.y > minn.y) && (m.x < maxx.x && m.y < maxx.y);
+    return (mouse_pos.x > minn.x && mouse_pos.y > minn.y) && (mouse_pos.x < maxx.x && mouse_pos.y < maxx.y);
 }
 
 bool contains(ImVec2 minn, ImVec2 maxx, ImVec2 pt) {
     return (pt.x > minn.x && pt.y > minn.y) && (pt.x < maxx.x && pt.y < maxx.y);
 }
 
-Base_Pin* Base_GraphNode::get_hovered_pin(ImVec2 mouse_pos) {
+Base_Pin* Base_GraphNode::GetHoveredPin(ImVec2 mouse_pos) {
     Base_Pin* pin = nullptr;
     ImVec2 ul = _pos - ImVec2(rect_size.x / 2, rect_size.y / 2);
     for (int i = 0; i < num_input; ++i) {
@@ -418,7 +417,7 @@ Base_Pin* Base_GraphNode::get_hovered_pin(ImVec2 mouse_pos) {
 
     if (pin) {
         ImGui::BeginTooltip();
-        std::string s = SS_Parser::type_to_string(pin->type);
+        std::string s = SS_Parser::GLSLTypeToString(pin->type);
         
         ImGui::Text("%s", s.c_str());
         ImGui::EndTooltip();
@@ -426,13 +425,13 @@ Base_Pin* Base_GraphNode::get_hovered_pin(ImVec2 mouse_pos) {
     return pin;
 }
 
-bool Base_GraphNode::is_display_button_hovered_over(ImVec2 m) {
-    if (!can_draw_intermed_image()) return false;
+bool Base_GraphNode::IsDisplayButtonHoveredOver(ImVec2 p) {
+    if (!CanDrawIntermedImage()) return false;
 
-    ImVec2 p = _pos - ImVec2(rect_size.x / 2, rect_size.y / 2);
-    ImVec2 minn = p + display_panel_rel_pos;
-    ImVec2 maxx = p + display_panel_rel_pos + display_panel_rel_size;
-    return (m.x > minn.x && m.y > minn.y) && (m.x < maxx.x && m.y < maxx.y);
+    ImVec2 cPos = _pos - ImVec2(rect_size.x / 2, rect_size.y / 2);
+    ImVec2 minn = cPos + display_panel_rel_pos;
+    ImVec2 maxx = cPos + display_panel_rel_pos + display_panel_rel_size;
+    return (p.x > minn.x && p.y > minn.y) && (p.x < maxx.x && p.y < maxx.y);
 }
 
 void Base_GraphNode::DisconnectAllPins() {
@@ -452,22 +451,23 @@ void Base_GraphNode::DisconnectAllPins() {
 }
 
 
-std::string Builtin_GraphNode::request_output(int out_index) {
+
+std::string Builtin_GraphNode::RequestOutput(int out_index) {
     return pin_parse_out_names[out_index];
 }
 
-std::string Builtin_GraphNode::process_for_code() {
+std::string Builtin_GraphNode::ProcessForCode() {
     pin_parse_out_names.clear();
     // OUTPUT NAMES
     for (int o = 0; o < num_output; ++o) 
-        pin_parse_out_names.push_back(SS_Parser::get_unique_var_name(_id, o, output_pins[o].type));
+        pin_parse_out_names.push_back(SS_Parser::GetUniqueVarName(_id, o, output_pins[o].type));
     // INPUT NAMES
     std::vector<std::string> in_pin_names;
     for (int i = 0; i < num_input; ++i)
         if (input_pins[i].input)
             in_pin_names.push_back(input_pins[i].input->get_pin_output_name());
         else
-            in_pin_names.push_back(SS_Parser::type_to_default_value(input_pins[i].type));
+            in_pin_names.push_back(SS_Parser::GLSLTypeToDefaultValue(input_pins[i].type));
     
     std::stringstream sss;
     // make ouputs
@@ -481,7 +481,7 @@ std::string Builtin_GraphNode::process_for_code() {
     // OUTPUT
     for (int o = start_out; o < num_output; ++o) {
         // VARIABLES
-        sss <<  SS_Parser::type_to_string(output_pins[o].type) << " " << pin_parse_out_names[o] << ";" << std::endl;
+        sss << SS_Parser::GLSLTypeToString(output_pins[o].type) << " " << pin_parse_out_names[o] << ";" << std::endl;
         // IN THE FUNCTION
         std::string rep = std::string("\%o") + (char)('1' + o);
         auto str_it = temp_inliner.find(rep);
@@ -502,7 +502,7 @@ std::string Builtin_GraphNode::process_for_code() {
     }
     // if we didn't replace the 'first' output placeholder then we use assignment directly
     if (start_out == 1)
-        sss  << SS_Parser::type_to_string(output_pins[0].type) << " " << pin_parse_out_names[0] << " = ";
+        sss << SS_Parser::GLSLTypeToString(output_pins[0].type) << " " << pin_parse_out_names[0] << " = ";
     // close out
     sss << temp_inliner;
     sss << ";";
@@ -555,7 +555,7 @@ Constant_Node::Constant_Node(Constant_Node_Data& data, int id, ImVec2 pos) {
     num_input = 0;
     output_pins = std::vector<Base_OutputPin>(num_output);
 
-    output_pins[0].type = SS_Parser::constant_type_to_type(data.m_gentype, data.m_type);
+    output_pins[0].type = SS_Parser::ConstantTypeToGLSLType(data.m_gentype, data.m_type);
     output_pins[0].bInput = false;
     output_pins[0].index = 0;
     output_pins[0].owner = this;
@@ -626,11 +626,11 @@ Vector_Op_Node::Vector_Op_Node(Vector_Op_Node_Data& data, int id, ImVec2 pos) {
 }
 
 
-std::string Vector_Op_Node::request_output(int out_index) {
+std::string Vector_Op_Node::RequestOutput(int out_index) {
 
     if (_vec_op == VEC_BREAK2_OP || _vec_op == VEC_BREAK3_OP || _vec_op == VEC_BREAK4_OP) {
         const char* sw[] = { "x", "y", "z", "w" };
-        std::string var_name = input_pins[0].input->owner->request_output(0);
+        std::string var_name = input_pins[0].input->owner->RequestOutput(0);
         return var_name + "." + sw[out_index];
 
 
@@ -650,7 +650,7 @@ std::string Vector_Op_Node::request_output(int out_index) {
     }
     return "";
 }
-std::string Vector_Op_Node::process_for_code() {
+std::string Vector_Op_Node::ProcessForCode() {
     return "";
 }
 
@@ -675,10 +675,10 @@ Param_Node::Param_Node(Parameter_Data* data, int id, ImVec2 pos) {
     output_pins[0]._name = "PARAM OUT";
 }
 
-std::string Param_Node::request_output(int out_index) {
+std::string Param_Node::RequestOutput(int out_index) {
     return _name;
 }
-std::string Param_Node::process_for_code() {
+std::string Param_Node::ProcessForCode() {
     return "";
 }
 
@@ -714,10 +714,10 @@ Boilerplate_Var_Node::Boilerplate_Var_Node(Boilerplate_Var_Data data, SS_Boilerp
 }
 
 
-std::string Boilerplate_Var_Node::request_output(int out_index) {
+std::string Boilerplate_Var_Node::RequestOutput(int out_index) {
     return _bp_manager->GetIntermediateResultCodeForVar(_name);
 }
-std::string Boilerplate_Var_Node::process_for_code() {
+std::string Boilerplate_Var_Node::ProcessForCode() {
     return "";
 }
 
@@ -749,7 +749,7 @@ Terminal_Node::~Terminal_Node()  {
 }
 
 
-std::string Constant_Node::request_output(int out_index) {
+std::string Constant_Node::RequestOutput(int out_index) {
     GLSL_TYPE t = output_pins[0].type;
     float* f_data = (float*)_data;
     std::stringstream sss;
@@ -780,6 +780,6 @@ std::string Constant_Node::request_output(int out_index) {
     std::string s = sss.str();
     return s;
 }
-std::string Constant_Node::process_for_code() {
+std::string Constant_Node::ProcessForCode() {
     return "";
 }

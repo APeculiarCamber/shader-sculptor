@@ -114,8 +114,8 @@ std::string Unlit_Boilerplate_Manager::GetVertTerminalBoilerplateCode() {
 std::string Unlit_Boilerplate_Manager::GetFragTerminalBoilerplateCode() {
     std::string terminal_str;
     std::string n;
-    if (fragNode->input_pins[0].input)
-        n = "vec4(" + fragNode->input_pins[0].input->get_pin_output_name() + ", 1)";
+    if (fragNode->GetInputPin(0).input)
+        n = "vec4(" + fragNode->GetInputPin(0).input->get_pin_output_name() + ", 1)";
     else
         n = "vec4(1, 1, 1, 1)";
 
@@ -352,16 +352,16 @@ std::string PBR_Lit_Boilerplate_Manager::GetFragInitBoilerplateCode() {
 std::string PBR_Lit_Boilerplate_Manager::GetVertTerminalBoilerplateCode() {
     
     std::string world_displace;
-    if (vertexNode->input_pins[0].input)
-        world_displace = vertexNode->input_pins[0].input->get_pin_output_name();
+    if (vertexNode->GetInputPin(0).input)
+        world_displace = vertexNode->GetInputPin(0).input->get_pin_output_name();
     else  world_displace = "vec3(0, 0, 0)";
     std::string vert_color1;
-    if (vertexNode->input_pins[1].input)
-        vert_color1 = vertexNode->input_pins[1].input->get_pin_output_name();
+    if (vertexNode->GetInputPin(1).input)
+        vert_color1 = vertexNode->GetInputPin(1).input->get_pin_output_name();
     else  vert_color1 = "vec3(0, 0, 0)";
     std::string vert_color2;
-    if (vertexNode->input_pins[2].input)
-        vert_color2 = vertexNode->input_pins[2].input->get_pin_output_name();
+    if (vertexNode->GetInputPin(2).input)
+        vert_color2 = vertexNode->GetInputPin(2).input->get_pin_output_name();
     else  vert_color2 = "vec3(0, 0, 0)";
 
     m_vertPinData.push_back(Boilerplate_Var_Data{"WORLD DISPLACEMENT", GLSL_TYPE(GLSL_Float | GLSL_Vec3, 1), false});
@@ -381,20 +381,20 @@ std::string PBR_Lit_Boilerplate_Manager::GetVertTerminalBoilerplateCode() {
 
 std::string PBR_Lit_Boilerplate_Manager::GetFragTerminalBoilerplateCode() {
     std::string albedo, metal, rough, ao, normal;
-    if (fragNode->input_pins[0].input)
-        albedo = fragNode->input_pins[0].input->get_pin_output_name();
+    if (fragNode->GetInputPin(0).input)
+        albedo = fragNode->GetInputPin(0).input->get_pin_output_name();
     else  albedo = "vec3(1, 1, 1)";
-    if (fragNode->input_pins[1].input)
-        metal = fragNode->input_pins[1].input->get_pin_output_name();
+    if (fragNode->GetInputPin(1).input)
+        metal = fragNode->GetInputPin(1).input->get_pin_output_name();
     else  metal = "0.5";
-    if (fragNode->input_pins[2].input)
-        rough = fragNode->input_pins[2].input->get_pin_output_name();
+    if (fragNode->GetInputPin(2).input)
+        rough = fragNode->GetInputPin(2).input->get_pin_output_name();
     else  rough = "0.5";
-    if (fragNode->input_pins[3].input)
-        ao = fragNode->input_pins[3].input->get_pin_output_name();
+    if (fragNode->GetInputPin(3).input)
+        ao = fragNode->GetInputPin(3).input->get_pin_output_name();
     else  ao = "1.0";
-    if (fragNode->input_pins[4].input)
-        normal = fragNode->input_pins[4].input->get_pin_output_name();
+    if (fragNode->GetInputPin(4).input)
+        normal = fragNode->GetInputPin(4).input->get_pin_output_name();
     else  normal = "vec3(0.5, 0.5, 1.0)";
 
     const char* post_fix = R"(    

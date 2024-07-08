@@ -1,6 +1,6 @@
 #include "ss_graph.hpp"
 #include "stb_image.h"
-#include "ss_pins.h"
+#include "ss_pins.hpp"
 #include "ss_parser.hpp"
 #include "ss_node_factory.hpp"
 #include "ss_boilerplate.hpp"
@@ -43,7 +43,7 @@ Base_GraphNode* SS_Graph::get_node(int id) {
 bool SS_Graph::delete_node(int id) {
     auto it = nodes.find(id);
     if (it == nodes.end()) return false;
-    if (!it->second->can_be_deleted()) return false;
+    if (!it->second->CanBeDeleted()) return false;
     if (it->second.get() == selected_node) selected_node = nullptr;
     if (it->second.get() == drag_node) { drag_node = nullptr; drag_pin = nullptr; }
 
@@ -52,12 +52,12 @@ bool SS_Graph::delete_node(int id) {
     nodes.erase(it);
 
     // If it is a parameter node, we need to remove it from the parameter->node map
-    if (it->second->get_node_type() == NODE_PARAM) {
+    if (it->second->GetNodeType() == NODE_PARAM) {
         auto* pn = (Param_Node*)it->second.get();
         assert(paramIDsToNodeIDs.find(pn->_paramID) != paramIDsToNodeIDs.end());
         auto& paramNodesOfID = paramIDsToNodeIDs[pn->_paramID];
-        assert(std::find(paramNodesOfID.begin(), paramNodesOfID.end(), pn->_id) != paramNodesOfID.end());
-        paramNodesOfID.erase(std::find(paramNodesOfID.begin(), paramNodesOfID.end(), pn->_id));
+        assert(std::find(paramNodesOfID.begin(), paramNodesOfID.end(), pn->GetID()) != paramNodesOfID.end());
+        paramNodesOfID.erase(std::find(paramNodesOfID.begin(), paramNodesOfID.end(), pn->GetID()));
     }
     delete n; // no LEAKS!
 
@@ -96,7 +96,7 @@ void SS_Graph::draw_param_panels() {
     ImGui::Begin("Parameters", nullptr, ImGuiWindowFlags_NoScrollbar);
     ImGui::BeginChild("Red",  ImGui::GetWindowSize() - ImVec2(0, 50), true, ImGuiWindowFlags_HorizontalScrollbar);
     for (auto& p_data : param_datas) {
-        p_data->draw(this);
+        p_data->Draw(this);
     }
     ImGui::EndChild();
 
@@ -166,8 +166,9 @@ void SS_Graph::handle_input() {
     if (ImGui::BeginPopupContextWindow())
     {
         ImVec2 add_pos = ImGui::GetItemRectMin();
-        if (drag_node)
-            drag_node->_old_pos = drag_node->_pos = drag_node->_old_pos + ImGui::GetMouseDragDelta(0);
+        if (drag_node) {
+            drag_node->SetDrawOldPos(drag_node->GetDrawOldPos() + ImGui::GetMouseDragDelta(0));
+        }
         drag_node = nullptr;
         drag_pin = nullptr;
 
@@ -251,24 +252,24 @@ void SS_Graph::handle_input() {
     ImVec2 m_pos = ImGui::GetMousePos();
     int hover_id = -1;
     for (const auto& n : nodes) {
-        if (n.second->is_hovering(m_pos - (_pos_offset + _drag_pos_offset))) {
+        if (n.second->IsHovering(m_pos - (_pos_offset + _drag_pos_offset))) {
             hover_id = n.first;
             break;
         }
     }
 
     Base_GraphNode* hover_node = hover_id != -1 ? nodes[hover_id].get() : nullptr;
-    Base_Pin* hover_pin = hover_node ? hover_node->get_hovered_pin(m_pos - (_pos_offset + _drag_pos_offset)) : nullptr;
+    Base_Pin* hover_pin = hover_node ? hover_node->GetHoveredPin(m_pos - (_pos_offset + _drag_pos_offset)) : nullptr;
     bool display_button_hovered = hover_node != nullptr &&
-                                  hover_node->is_display_button_hovered_over(m_pos - (_pos_offset + _drag_pos_offset));
+            hover_node->IsDisplayButtonHoveredOver(m_pos - (_pos_offset + _drag_pos_offset));
     if (display_button_hovered) {
         ImGui::BeginTooltip();
         ImGui::Text("DISPLAY INTERMED");
         ImGui::EndTooltip();
     }
     if (ImGui::IsKeyPressed(ImGuiKey_Delete) && hover_id != -1) {
-        if (hover_pin && hover_pin->has_connections()) {
-            hover_pin->disconnect_all_from(true);
+        if (hover_pin && hover_pin->HasConnections()) {
+            hover_pin->DisconnectAllFrom(true);
         } else {
             delete_node(hover_id);
         }
@@ -292,7 +293,7 @@ void SS_Graph::handle_input() {
     if (ImGui::IsMouseDragging(0)) {
         if (!_screen_dragging) {
             if (drag_node) {
-                drag_node->_pos = drag_node->_old_pos + ImGui::GetMouseDragDelta(0);
+                drag_node->SetDrawPos(drag_node->GetDrawOldPos() + ImGui::GetMouseDragDelta(0));
             }
         } else {
             _drag_pos_offset = ImGui::GetMouseDragDelta(0);
@@ -302,11 +303,11 @@ void SS_Graph::handle_input() {
     if (ImGui::IsMouseReleased(0) && !_screen_dragging) {
         if (hover_node) {
             if (display_button_hovered) {
-                selected_node->toggle_display();
+                selected_node->ToggleDisplay();
             }
         }
         if (drag_node)
-            drag_node->_old_pos = drag_node->_pos = drag_node->_old_pos + ImGui::GetMouseDragDelta(0);
+            drag_node->SetDrawOldPos(drag_node->GetDrawOldPos() + ImGui::GetMouseDragDelta(0));
 
         if (drag_pin && hover_pin) {
             if (drag_pin->bInput && !hover_pin->bInput)
@@ -416,7 +417,7 @@ void SS_Graph::draw() {
     
     // drawn nodes, may want to decrease view size
     for (const auto& n_it : nodes) {
-        if (n_it.second->is_display_up)
+        if (n_it.second->GetHasDisplayUp())
             n_it.second->DrawIntermediateResult(_main_framebuffer, param_datas);
     }
 
@@ -430,14 +431,14 @@ void SS_Graph::draw() {
         handle_input();
     ImDrawList* dl = ImGui::GetWindowDrawList(); 
     for (auto& p_node : nodes)
-        p_node.second->set_bounds(1);
+        p_node.second->SetBounds(1);
     for (auto& p_node : nodes)
-        p_node.second->draw(dl, _pos_offset + _drag_pos_offset, p_node.second.get() == selected_node);
+        p_node.second->Draw(dl, _pos_offset + _drag_pos_offset, p_node.second.get() == selected_node);
     for (auto& p_node : nodes)
-        p_node.second->draw_output_connects(dl, _pos_offset + _drag_pos_offset);
+        p_node.second->DrawOutputConnects(dl, _pos_offset + _drag_pos_offset);
     if (drag_pin) {
         float r;
-        dl->AddLine(drag_pin->get_pin_pos(3, 2, &r) + _pos_offset + _drag_pos_offset, ImGui::GetMousePos(), 0xffffffff);
+        dl->AddLine(drag_pin->GetPinPos(3, 2, &r) + _pos_offset + _drag_pos_offset, ImGui::GetMousePos(), 0xffffffff);
     }
 
     ImGui::End();
@@ -448,8 +449,8 @@ void SS_Graph::draw_node_context_panel() const {
     ImGui::Begin("Node Context Panel");
     ImGui::Text("NODE:");
     if (selected_node) {
-        ImGui::Text("%s", selected_node->_name.c_str());
-        if (selected_node->get_node_type() == NODE_CONSTANT) {
+        ImGui::Text("%s", selected_node->GetName().c_str());
+        if (selected_node->GetNodeType() == NODE_CONSTANT) {
             auto* const_node = (Constant_Node*)selected_node;
             
             if (const_node->_data_type == SS_Float) {
@@ -483,15 +484,15 @@ std::unordered_map<Base_GraphNode*, int> GetInDegreesOfAllNodes(Base_GraphNode* 
     std::unordered_map<Base_GraphNode*, int> inDegrees;
     std::stack<Base_GraphNode*> processStack;
     processStack.push(root);
-    inDegrees.insert({root, root->num_input});
+    inDegrees.insert({root, root->GetInputPinCount()});
     while (not processStack.empty()) {
         Base_GraphNode* node = processStack.top();
         processStack.pop();
-        for (int i = 0; i < node->num_input; i++) {
-            if (not node->input_pins[i].input) continue;
-            Base_GraphNode* inputNode = node->input_pins[i].input->owner;
+        for (size_t i = 0; i < node->GetInputPinCount(); i++) {
+            if (not node->GetInputPin(i).input) continue;
+            Base_GraphNode* inputNode = node->GetInputPin(i).input->owner;
             if (inDegrees.find(inputNode) != inDegrees.end()) {
-                inDegrees.insert({inputNode, inputNode->num_input});
+                inDegrees.insert({inputNode, inputNode->GetInputPinCount()});
                 processStack.push(inputNode);
             }
         }
@@ -514,8 +515,8 @@ std::vector<Base_GraphNode*> SS_Graph::ConstructTopologicalOrder(Base_GraphNode*
         processStack.pop();
         topOrder.push_back(node);
 
-        for (int o = 0; o < node->num_output; ++o) {
-            for (const auto& conn : node->output_pins[o].output) {
+        for (size_t o = 0; o < node->GetOutputPinCount(); ++o) {
+            for (const auto& conn : node->GetOutputPin(o).output) {
                 Base_GraphNode* inputNode = conn->owner;
                 inDegrees[inputNode] -= 1;
                 if (inDegrees[inputNode] <= 0)
@@ -527,12 +528,12 @@ std::vector<Base_GraphNode*> SS_Graph::ConstructTopologicalOrder(Base_GraphNode*
 }
 
 void SS_Graph::SetIntermediateCodeForNode(std::string intermedCode, Base_GraphNode* node) {
-    std::string output = node->request_output(0);
+    std::string output = node->RequestOutput(0);
     if (output.empty()) {
         node->SetShaderCode(_current_frag_code, _current_vert_code);
     } else {
         intermedCode += "gl_FragColor = ";
-        intermedCode +=  SS_Parser::convert_output_to_color_str(output, node->output_pins[0].type) + ";\n}\n";
+        intermedCode += SS_Parser::ConvertOutputToColorStr(output, node->GetOutputPin(0).type) + ";\n}\n";
         node->SetShaderCode(intermedCode, _current_vert_code);
     }
 }
@@ -540,7 +541,7 @@ void SS_Graph::SetIntermediateCodeForNode(std::string intermedCode, Base_GraphNo
 void WriteParameterData(std::ostringstream& oss, const std::vector<std::unique_ptr<Parameter_Data>>& params) {
     for (const auto& p_data : params) {
         oss << "uniform ";
-        oss << SS_Parser::type_to_string(p_data->GetType());
+        oss << SS_Parser::GLSLTypeToString(p_data->GetType());
         oss << " ";
         oss << p_data->GetName() << ";\n";
     }
@@ -557,7 +558,7 @@ void SS_Graph::SetFinalShaderTextByConstructOrders(const std::vector<Base_GraphN
         // -- main body
         vertIss << "\nvoid main() {\n" << _bp_manager->GetVertInitBoilerplateCode() << '\n';
         for (Base_GraphNode* node: vertOrder) {
-            vertIss << "\t" << node->process_for_code() << "  // Node " << node->_name << ", id=" << node->_id << '\n';
+            vertIss << "\t" << node->ProcessForCode() << "  // Node " << node->GetName() << ", id=" << node->GetID() << '\n';
         }
         vertIss << _bp_manager->GetVertTerminalBoilerplateCode() << "\n}\n";
         _current_vert_code = vertIss.str();
@@ -571,7 +572,7 @@ void SS_Graph::SetFinalShaderTextByConstructOrders(const std::vector<Base_GraphN
         // -- main body
         fragIss << "\nvoid main() {\n" << _bp_manager->GetFragInitBoilerplateCode() << '\n';
         for (Base_GraphNode* node: fragOrder) {
-            fragIss << "\t" << node->process_for_code() << "  // Node " << node->_name << ", id=" << node->_id << '\n';
+            fragIss << "\t" << node->ProcessForCode() << "  // Node " << node->GetName() << ", id=" << node->GetID() << '\n';
         }
         fragIss << _bp_manager->GetFragTerminalBoilerplateCode() << "\n}\n";
         _current_frag_code = fragIss.str();
@@ -586,7 +587,7 @@ void SS_Graph::PropagateIntermediateVertexCodeToNodes(const std::vector<Base_Gra
     // -- main body
     vertIss << "\nvoid main() {\n" << _bp_manager->GetFragInitBoilerplateCode() << '\n';
     for (Base_GraphNode* node: vertOrder) {
-        vertIss << "\t" << node->process_for_code() << "  // Node " << node->_name << ", id=" << node->_id << '\n';
+        vertIss << "\t" << node->ProcessForCode() << "  // Node " << node->GetName() << ", id=" << node->GetID() << '\n';
         SetIntermediateCodeForNode(vertIss.str(), node);
     }
     // -- compile
@@ -603,7 +604,7 @@ void SS_Graph::PropagateIntermediateFragmentCodeToNodes(const std::vector<Base_G
     // -- main body
     fragIss << "\nvoid main() {\n" << _bp_manager->GetFragInitBoilerplateCode() << '\n';
     for (Base_GraphNode* node: fragOrder) {
-        fragIss << "\t" << node->process_for_code() << "  // Node " << node->_name << ", id=" << node->_id << '\n';
+        fragIss << "\t" << node->ProcessForCode() << "  // Node " << node->GetName() << ", id=" << node->GetID() << '\n';
         SetIntermediateCodeForNode(fragIss.str(), node);
     }
     // -- compile
@@ -647,7 +648,7 @@ void SS_Graph::UpdateParamDataName(int paramID, const char *name) {
     const auto nodeIDs = paramIDsToNodeIDs[paramID];
     for (int nID : nodeIDs) {
         auto* pn = (Param_Node*)get_node(nID);
-        pn->_name = name;
+        pn->SetName(name);
     }
     invalidate_shaders();
 }

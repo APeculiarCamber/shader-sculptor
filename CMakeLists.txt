@@ -32,9 +32,9 @@ file(GLOB_RECURSE GLAD_SOURCES
 
 # Add the main executable
 add_executable(shader_scupltor ${MAIN_SOURCES}
-        src/ss/ss_node_types.h
+        src/ss/ss_node_types.hpp
         src/ss/ss_pins.cpp
-        src/ss/ss_pins.h
+        src/ss/ss_pins.hpp
         src/ss/ss_data.cpp
         src/ss/ss_data.h)
 

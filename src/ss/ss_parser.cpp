@@ -1,4 +1,5 @@
 
+#include <algorithm>
 #include "ss_parser.hpp"
 
 /*Scalars
@@ -30,7 +31,7 @@ gsamplerCube	GL_TEXTURE_CUBE_MAP	Cubemap Texture
 */
 
 // doesn't use gentype under assumption of returning this to USE
-char SS_Parser::get_vec_len_char(unsigned int type) {
+char SS_Parser::GetVecLenChar(GLSL_TYPE_ENUM_BITS type) {
     bool b_vec2 = type & GLSL_Vec2;
     bool b_vec3 = type & GLSL_Vec3;
     bool b_vec4 = type & GLSL_Vec4;
@@ -46,7 +47,7 @@ char SS_Parser::get_vec_len_char(unsigned int type) {
     return 'n';
 }
 
-char get_vec_type_char(unsigned int type) {
+char GetBaseTypeToChar(GLSL_TYPE_ENUM_BITS type) {
     if (type & GLSL_Bool)
         return 'b';
     else if (type & GLSL_Float)
@@ -60,24 +61,24 @@ char get_vec_type_char(unsigned int type) {
     return '?';
 }
 
-std::string SS_Parser::type_to_string(GLSL_TYPE type) {
-    unsigned type_flags = type.type_flags;
+std::string SS_Parser::GLSLTypeToString(GLSL_TYPE type) {
+    GLSL_TYPE_ENUM_BITS type_flags = type.type_flags;
     if ((type_flags & GLSL_LenMask) == GLSL_LenMask && !(type_flags & GLSL_Mat)) {
         // GenType
-        char vec_type = get_vec_type_char(type_flags);
+        char vec_type = GetBaseTypeToChar(type_flags);
         if (vec_type == ' ')
             return "GenType";
         else
             return std::string("Gen") + (char)toupper(vec_type) + "Type";
     } if ((type_flags & GLSL_LenMask) != GLSL_Scalar && !(type_flags & GLSL_Mat)) {
         // VECTOR
-        char vec_len = get_vec_len_char(type_flags);
-        char vec_type = get_vec_type_char(type_flags);
+        char vec_len = GetVecLenChar(type_flags);
+        char vec_type = GetBaseTypeToChar(type_flags);
         std::string vec_str = "vec";
         return vec_type + vec_str + vec_len;
     } else if (type_flags & GLSL_Mat && (type_flags & (GLSL_Bool | GLSL_Float | GLSL_Double | GLSL_Int))) {
         // MATRIX
-        return std::string("mat") + get_vec_len_char(type_flags);
+        return std::string("mat") + GetVecLenChar(type_flags);
     }
     if (type_flags & GLSL_TextureSampler2D) {
         return "sampler2D";
@@ -120,7 +121,7 @@ Samplers
     They actually use gsampler1D where g is anything but I'm only gonna let them have floats so g = ''
     sampler2D, sampler3D, samplerCube
 */
-unsigned type_char_to_flag(char t) {
+GLSL_TYPE_ENUM_BITS typeCharToFlag(char t) {
     t = (char)std::tolower(t);
     switch (t) {
         case 'd': return GLSL_Double;
@@ -131,7 +132,7 @@ unsigned type_char_to_flag(char t) {
         default: return GLSL_Float;
     }
 }
-unsigned vec_len_char_to_flag(char t) {
+GLSL_TYPE_ENUM_BITS vecLenCharToFlag(char t) {
     t = (char)std::tolower(t);
     switch (t) {
         case 'n': return GLSL_GenVec | GLSL_VecN;
@@ -143,7 +144,7 @@ unsigned vec_len_char_to_flag(char t) {
     }
 }
 
-GLSL_TYPE SS_Parser::string_to_type(std::string type_str) {
+GLSL_TYPE SS_Parser::StringToGLSLType(std::string type_str) {
     size_t v_i;
     GLSL_TYPE type;
     type.type_flags = 0;
@@ -152,12 +153,12 @@ GLSL_TYPE SS_Parser::string_to_type(std::string type_str) {
         if (v_i == 0) 
             type.type_flags |= GLSL_Float;
         else 
-            type.type_flags |= type_char_to_flag(type_str[0]);
+            type.type_flags |= typeCharToFlag(type_str[0]);
     
         if (type_str[v_i + 3] == 'n')
             type.type_flags |= GLSL_GenVec | GLSL_VecN;
         else 
-            type.type_flags |= vec_len_char_to_flag(type_str[v_i + 3]);
+            type.type_flags |= vecLenCharToFlag(type_str[v_i + 3]);
     } 
     // GEN TYPE
     else if ((v_i = type_str.find("Type")) != std::string::npos) {
@@ -165,7 +166,7 @@ GLSL_TYPE SS_Parser::string_to_type(std::string type_str) {
         if (type_str[v_i] == 'n') // the n of Gen in GenType (float type GenType)
             type.type_flags |= GLSL_Float;
         else 
-            type.type_flags |= type_char_to_flag(type_str[v_i - 1]);
+            type.type_flags |= typeCharToFlag(type_str[v_i - 1]);
     } 
     // MAT
     else if ((v_i = type_str.find("mat")) != std::string::npos) {
@@ -175,7 +176,7 @@ GLSL_TYPE SS_Parser::string_to_type(std::string type_str) {
         else 
             type.type_flags |= GLSL_Double;
 
-        type.type_flags |= vec_len_char_to_flag(type_str[v_i + 3]);
+        type.type_flags |= vecLenCharToFlag(type_str[v_i + 3]);
     } 
     // SCALAR
     else {
@@ -203,11 +204,11 @@ GLSL_TYPE SS_Parser::string_to_type(std::string type_str) {
     }
     return type;
 }
-std::string SS_Parser::get_unique_var_name(int node_id, int var_id, GLSL_TYPE type) {
+std::string SS_Parser::GetUniqueVarName(int node_id, int var_id, GLSL_TYPE type) {
     return std::string("INTERNAL_VAR_") + std::to_string(node_id) + std::string("_") + std::to_string(var_id);
 }
 
-ImU32 SS_Parser::type_to_color(GLSL_TYPE type) {
+ImU32 SS_Parser::GLSLTypeToColor(GLSL_TYPE type) {
     if ((GLSL_AllTypes & type.type_flags) == GLSL_AllTypes)
         return 0xffffffff;
     if (GLSL_Bool & type.type_flags) {
@@ -222,7 +223,7 @@ ImU32 SS_Parser::type_to_color(GLSL_TYPE type) {
     return 0xffffffff;
 }
 
-GLSL_TYPE SS_Parser::constant_type_to_type(GRAPH_PARAM_GENTYPE gentype, GRAPH_PARAM_TYPE type, unsigned int arr_size) {
+GLSL_TYPE SS_Parser::ConstantTypeToGLSLType(GRAPH_PARAM_GENTYPE gentype, GRAPH_PARAM_TYPE type, unsigned int arr_size) {
     GLSL_TYPE t;
     t.type_flags = 0;
     t.arr_size = arr_size;
@@ -267,18 +268,18 @@ std::string make_default_vec_str_val(char vec_len, char vec_type) {
     return vec_type + std::string("vec") + vec_len + "()";
 }
 
-std::string SS_Parser::type_to_default_value(GLSL_TYPE type) {
-    unsigned type_flags = type.type_flags;
+std::string SS_Parser::GLSLTypeToDefaultValue(GLSL_TYPE type) {
+    GLSL_TYPE_ENUM_BITS type_flags = type.type_flags;
     if ((type_flags & GLSL_LenMask) == GLSL_LenMask && !(type_flags & GLSL_Mat)) {
         return "FAILURE";
     } if ((type_flags & GLSL_LenMask) != GLSL_Scalar && !(type_flags & GLSL_Mat)) {
         // VECTOR
-        char vec_len = get_vec_len_char(type_flags);
-        char vec_type = get_vec_type_char(type_flags);
+        char vec_len = GetVecLenChar(type_flags);
+        char vec_type = GetBaseTypeToChar(type_flags);
         return make_default_vec_str_val(vec_len, vec_type);
     } else if (type_flags & GLSL_Mat) {
         // MATRIX
-        return make_default_mat_str_val(get_vec_len_char(type_flags));
+        return make_default_mat_str_val(GetVecLenChar(type_flags));
     }
     if (type_flags & GLSL_TextureSampler2D) {
         return "0";
@@ -307,7 +308,7 @@ std::string SS_Parser::type_to_default_value(GLSL_TYPE type) {
     return "";
 }
 
-std::string SS_Parser::convert_output_to_color_str(std::string pin_name, GLSL_TYPE type) {
+std::string SS_Parser::ConvertOutputToColorStr(std::string pin_name, GLSL_TYPE type) {
     if (GLSL_Float & type.type_flags) {
         if (type.type_flags & GLSL_Scalar)
             return "vec4(" + pin_name + ", "  + pin_name + ", "  + pin_name + ", 1)";
@@ -337,4 +338,10 @@ std::string SS_Parser::convert_output_to_color_str(std::string pin_name, GLSL_TY
             return "vec4(float(" + pin_name + ".x), float(" + pin_name + ".y), float(" +  pin_name + ".z), " + "1)";
     }
     return "vec4(1, 1, 1, 1)";
+}
+
+std::string SS_Parser::StringToLower(const std::string &str) {
+    std::string lowerStr(str.size(), ' ');
+    std::transform(str.begin(), str.end(), lowerStr.begin(), [](char c) { return tolower(c); });
+    return str;
 }

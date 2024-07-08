@@ -13,60 +13,90 @@
 
 #include "ss_data.h"
 #include "../imgui/imgui.h"
-#include "ss_node_types.h"
-#include "ss_pins.h"
+#include "ss_node_types.hpp"
+#include "ss_pins.hpp"
 #include "ss_data.h"
 
-// TODO: see about these forward declares
-class SS_Boilerplate_Manager;
+#define NODE_TEXTURE_NULL 0xFFFFFFFF
 
+class SS_Boilerplate_Manager;
 
 // BASE CLASS FOR ALL GRAPH NODES, HANDLES MOST OF THE DRAWING
 class Base_GraphNode {
 public:
     virtual ~Base_GraphNode();
-    virtual void set_bounds(float scale);
-    virtual void draw(ImDrawList* drawList, ImVec2 pos_offset, bool is_hover);
-    void draw_output_connects(ImDrawList* drawList, ImVec2 offset);
-    bool is_hovering(ImVec2 mouse_pos);
-    Base_Pin* get_hovered_pin(ImVec2 mouse_pos);
-    bool is_display_button_hovered_over(ImVec2 p);
+    virtual void SetBounds(float scale);
+    virtual void Draw(ImDrawList* drawList, ImVec2 pos_offset, bool is_hover);
+    void DrawOutputConnects(ImDrawList* drawList, ImVec2 offset);
+    bool IsHovering(ImVec2 mouse_pos);
+    Base_Pin* GetHoveredPin(ImVec2 mouse_pos);
+    bool IsDisplayButtonHoveredOver(ImVec2 p);
 
-    void toggle_display() { is_display_up = !is_display_up; };
+    void ToggleDisplay() { is_display_up = !is_display_up; };
 
-    virtual std::string request_output(int out_index) = 0;
-    virtual std::string process_for_code() = 0;
+    virtual std::string RequestOutput(int out_index) = 0;
+    virtual std::string ProcessForCode() = 0;
     void SetShaderCode(const std::string& frag_shad, const std::string& vert_shad);
 
-    unsigned int get_most_restrictive_gentype_in_subgraph(Base_Pin* start_pin);
-    unsigned int get_most_restrictive_gentype_in_subgraph(Base_Pin* start_pin, std::unordered_set<int>& processed_ids);
+    unsigned int GetMostRestrictiveGentypeInSubgraph(Base_Pin* start_pin);
+    unsigned int GetMostRestrictiveGentypeInSubgraph_Rec(Base_Pin* start_pin, std::unordered_set<int>& processed_ids);
 
-    void propogate_gentype_in_subgraph(Base_Pin* start_pin, unsigned int type);
-    void propogate_gentype_in_subgraph(Base_Pin* start_pin, unsigned int type, std::unordered_set<int>& processed_ids);
-    void propogate_build_dirty();
+    void PropogateGentypeInSubgraph(Base_Pin* start_pin, unsigned int type);
+    void PropogateGentypeInSubgraph_Rec(Base_Pin* start_pin, unsigned int type, std::unordered_set<int>& processed_ids);
+    void PropogateBuildDirty();
 
-    virtual NODE_TYPE get_node_type() { return NODE_DEFAULT; };
+    virtual NODE_TYPE GetNodeType() { return NODE_DEFAULT; };
 
-    virtual bool can_connect_pins(Base_InputPin* in_pin, Base_OutputPin* out_pin);
-    virtual void inform_of_connect(Base_InputPin* in_pin, Base_OutputPin* out_pin) {}
+    virtual bool CanConnectPins(Base_InputPin* in_pin, Base_OutputPin* out_pin);
+    virtual void InformOfConnect(Base_InputPin* in_pin, Base_OutputPin* out_pin) {}
 
     bool GenerateIntermediateResultFrameBuffers();
     void CompileIntermediateCode(SS_Boilerplate_Manager* bp);
     void DrawIntermediateResult(unsigned int framebuffer, const std::vector<std::unique_ptr<Parameter_Data>>& params);
 
-    unsigned int get_image_texture_id() const { return nodes_rendered_texture; }
-    virtual bool can_draw_intermed_image() { return !output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; ; };
-    ImTextureID bind_and_get_image_texture();
+    unsigned int GetImageTextureId() const { return nodes_rendered_texture; }
+    virtual bool CanDrawIntermedImage() { return !output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; ; };
+    ImTextureID BindAndGetImageTexture();
 
-    bool can_be_deleted() { return get_node_type() != NODE_TERMINAL; };
+    bool CanBeDeleted() { return GetNodeType() != NODE_TERMINAL; };
 
     void DisconnectAllPins();
 
+    // GETTERS
+    size_t GetInputPinCount() const { return input_pins.size(); }
+    size_t GetOutputPinCount() const { return output_pins.size(); }
+    const Base_InputPin& GetInputPin(int ind) const { return input_pins[ind]; }
+    const Base_OutputPin& GetOutputPin(int ind) const {  return output_pins[ind]; }
+
+    ImVec2 GetDrawPos() const { return _pos; }
+    ImVec2 GetDrawOldPos() const { return _old_pos; }
+    ImVec2 GetDrawRectSize() const { return rect_size; }
+    ImVec2 GetDrawInputPinRelativePos(int ind) const { return in_pin_rel_pos[ind]; }
+    ImVec2 GetDrawOutputPinRelativePos(int ind) const { return out_pin_rel_pos[ind]; }
+    ImVec2 GetDrawInputPinSize(int ind) const { return in_pin_sizes[ind]; }
+    ImVec2 GetDrawOutputPinSize(int ind) const { return out_pin_sizes[ind]; }
+
+    bool GetHasDisplayUp() const { return is_display_up; }
+
+    int GetID() const { return _id; }
+    const std::string& GetName() const { return _name; }
+
+    // SETTERS
+    void SetName(const std::string& newName) {
+        _name = newName;
+    }
+    void SetDrawOldPos(ImVec2 pos) {
+        _old_pos = _pos = pos;
+    }
+    void SetDrawPos(ImVec2 pos) {
+        _pos = pos;
+    }
+
+protected:
     // MEMBER VARIABLES
     int _id;
     ImVec2 _old_pos;
     ImVec2 _pos;
-    ImVec2 _size;
     class ga_cube_component* _cube = nullptr;
 
     // BOUNDS
@@ -77,8 +107,8 @@ public:
     std::vector<ImVec2> in_pin_rel_pos;
     std::vector<ImVec2> out_pin_rel_pos;
 
-    unsigned int nodes_rendered_texture;
-    unsigned int nodes_depth_texture;
+    unsigned int nodes_rendered_texture { NODE_TEXTURE_NULL };
+    unsigned int nodes_depth_texture { NODE_TEXTURE_NULL };
     std::string _frag_str { }; // "#version 400\nvoid main() { gl_FragColor = vec4(0.5, 0.0, 1.0, 1.0); }"
     std::string _vert_str { }; // "#version 400\nlayout(location = 0) in vec3 in_vertex; void main() { gl_Position = vec4(in_vertex, 1.0); }"
 
@@ -104,11 +134,11 @@ public:
     Builtin_GraphNode(Builtin_Node_Data& data, int id, ImVec2 pos);
 
     ~Builtin_GraphNode() override;
-    NODE_TYPE get_node_type() override { return NODE_BUILTIN; };
+    NODE_TYPE GetNodeType() override { return NODE_BUILTIN; };
     
-    std::string request_output(int out_index) override;
-    std::string process_for_code() override;
-    bool can_draw_intermed_image() override { return true; };
+    std::string RequestOutput(int out_index) override;
+    std::string ProcessForCode() override;
+    bool CanDrawIntermedImage() override { return true; };
 
     // Returns the string which is usable for the output specified
         // could be a variable or a function, or a swizzling/new_vec
@@ -124,12 +154,12 @@ public:
     void* _data;
 
     Constant_Node(Constant_Node_Data& data, int id, ImVec2 pos);
-    NODE_TYPE get_node_type() override { return NODE_CONSTANT; };
+    NODE_TYPE GetNodeType() override { return NODE_CONSTANT; };
 
-    bool can_draw_intermed_image() override { return !output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; };
+    bool CanDrawIntermedImage() override { return !output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; };
 
-    std::string request_output(int out_index) override;
-    std::string process_for_code() override;
+    std::string RequestOutput(int out_index) override;
+    std::string ProcessForCode() override;
 
 };
 
@@ -141,27 +171,27 @@ public:
     void make_vec_break(int s);
     void make_vec_make(int s);
 
-     NODE_TYPE get_node_type() override { return NODE_VECTOR_OP; };
+     NODE_TYPE GetNodeType() override { return NODE_VECTOR_OP; };
 
-    bool can_draw_intermed_image() override { return false; };
+    bool CanDrawIntermedImage() override { return false; };
 
-    std::string request_output(int out_index) override;
-    std::string process_for_code() override;
+    std::string RequestOutput(int out_index) override;
+    std::string ProcessForCode() override;
 };
 
 class Param_Node : public Base_GraphNode {
-public: // TODO: scoping & making members protected, use methods!!!!
+public:
     int _paramID;
     Param_Node(Parameter_Data* data, int id, ImVec2 pos);
     ~Param_Node() override;
 
-    NODE_TYPE get_node_type() override { return NODE_PARAM; };
+    NODE_TYPE GetNodeType() override { return NODE_PARAM; };
 
-    bool can_draw_intermed_image() override { return !output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; ; };
+    bool CanDrawIntermedImage() override { return !output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; ; };
 
 
-    std::string request_output(int out_index) override;
-    std::string process_for_code() override;
+    std::string RequestOutput(int out_index) override;
+    std::string ProcessForCode() override;
 
     void update_type_from_param(GLSL_TYPE type);
 };
@@ -171,26 +201,26 @@ class Terminal_Node : public Base_GraphNode {
 public:
     ~Terminal_Node() override;
     Terminal_Node(const std::vector<Boilerplate_Var_Data>& terminal_pins, int id, ImVec2 pos);
-    bool can_draw_intermed_image() override { return true; };
+    bool CanDrawIntermedImage() override { return true; };
 
-    std::string request_output(int out_index) override { return {}; }
-    std::string process_for_code() override { return {}; }
+    std::string RequestOutput(int out_index) override { return {}; }
+    std::string ProcessForCode() override { return {}; }
 
     bool frag_node;
-     NODE_TYPE get_node_type() override { return NODE_TERMINAL; };
+     NODE_TYPE GetNodeType() override { return NODE_TERMINAL; };
 };
 
 class Boilerplate_Var_Node : public Base_GraphNode {
 public:
     Boilerplate_Var_Node(Boilerplate_Var_Data data, SS_Boilerplate_Manager* bp, int id, ImVec2 pos);
-    bool can_draw_intermed_image() override { return not output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; };
+    bool CanDrawIntermedImage() override { return not output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; };
 
 
     bool frag_node;
     SS_Boilerplate_Manager* _bp_manager;
-    NODE_TYPE get_node_type() override { return NODE_BOILER_VAR; };
+    NODE_TYPE GetNodeType() override { return NODE_BOILER_VAR; };
     
-    std::string request_output(int out_index) override;
-    std::string process_for_code() override;
+    std::string RequestOutput(int out_index) override;
+    std::string ProcessForCode() override;
 };
 #endif

@@ -92,7 +92,7 @@
 //
 //   Simple 3D API (don't ship this, but it's fine for tools and quick start)
 //           stbtt_BakeFontBitmap()               -- bake a font to a bitmap for use as texture
-//           stbtt_GetBakedQuad()                 -- compute quad to draw for a given char
+//           stbtt_GetBakedQuad()                 -- compute quad to Draw for a given char
 //
 //   Improved 3D API (more shippable):
 //           #include "stb_rect_pack.h"           -- optional, but you really want it
@@ -154,7 +154,7 @@
 //         and below the baseline.
 //
 //      Current Point
-//         As you draw text to the screen, you keep track of a "current point"
+//         As you Draw text to the screen, you keep track of a "current point"
 //         which is the origin of each character. The current point's vertical
 //         position is the baseline. Even "baked fonts" use this model.
 //
@@ -550,10 +550,10 @@ typedef struct
 STBTT_DEF void stbtt_GetBakedQuad(const stbtt_bakedchar *chardata, int pw, int ph,  // same data as above
                                int char_index,             // character to display
                                float *xpos, float *ypos,   // pointers to current position in screen pixel space
-                               stbtt_aligned_quad *q,      // output: quad to draw
+                               stbtt_aligned_quad *q,      // output: quad to Draw
                                int opengl_fillrule);       // true if opengl fill rule; false if DX9 or earlier
 // Call GetBakedQuad with char_index = 'character - first_char', and it
-// creates the quad you need to draw and advances the current position.
+// creates the quad you need to Draw and advances the current position.
 //
 // The coordinate system used assumes y increases downwards.
 //
@@ -658,7 +658,7 @@ STBTT_DEF void stbtt_PackSetSkipMissingCodepoints(stbtt_pack_context *spc, int s
 STBTT_DEF void stbtt_GetPackedQuad(const stbtt_packedchar *chardata, int pw, int ph,  // same data as above
                                int char_index,             // character to display
                                float *xpos, float *ypos,   // pointers to current position in screen pixel space
-                               stbtt_aligned_quad *q,      // output: quad to draw
+                               stbtt_aligned_quad *q,      // output: quad to Draw
                                int align_to_integer);
 
 STBTT_DEF int  stbtt_PackFontRangesGatherRects(stbtt_pack_context *spc, const stbtt_fontinfo *info, stbtt_pack_range *ranges, int num_ranges, stbrp_rect *rects);
@@ -911,7 +911,7 @@ typedef struct
 } stbtt__bitmap;
 
 // rasterize a shape with quadratic beziers into a bitmap
-STBTT_DEF void stbtt_Rasterize(stbtt__bitmap *result,        // 1-channel bitmap to draw into
+STBTT_DEF void stbtt_Rasterize(stbtt__bitmap *result,        // 1-channel bitmap to Draw into
                                float flatness_in_pixels,     // allowable error of curve in pixels
                                stbtt_vertex *vertices,       // array of vertices defining shape
                                int num_verts,                // number of vertices in above array
@@ -2135,7 +2135,7 @@ static int stbtt__run_charstring(const stbtt_fontinfo *info, int glyph_index, st
          int b1 = stbtt__buf_get8(&b);
          switch (b1) {
          // @TODO These "flex" implementations ignore the flex-depth and resolution,
-         // and always draw beziers.
+         // and always Draw beziers.
          case 0x22: // hflex
             if (sp < 7) return STBTT__CSERR("hflex stack");
             dx1 = s[0];
@@ -2798,7 +2798,7 @@ static void stbtt__fill_active_edges(unsigned char *scanline, int len, stbtt__ac
          x0 = e->x; w += e->direction;
       } else {
          int x1 = e->x; w += e->direction;
-         // if we went to zero, we need to draw
+         // if we went to zero, we need to Draw
          if (w == 0) {
             int i = x0 >> STBTT_FIXSHIFT;
             int j = x1 >> STBTT_FIXSHIFT;

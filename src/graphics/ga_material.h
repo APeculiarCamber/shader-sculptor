@@ -22,7 +22,7 @@
 
 /*
 ** Base class for all graphical materials.
-** Includes the shaders and other state necessary to draw geometry.
+** Includes the shaders and other state necessary to Draw geometry.
 */
 static std::chrono::system_clock::time_point k_ga_material_clock_start = std::chrono::system_clock::now();
 
@@ -47,7 +47,7 @@ public:
 
 /*
 ** Base class for all graphical materials.
-** Includes the shaders and other state necessary to draw geometry.
+** Includes the shaders and other state necessary to Draw geometry.
 */
 class ga_pbr_material : public ga_material
 {

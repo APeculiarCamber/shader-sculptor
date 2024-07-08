@@ -123,7 +123,6 @@ void ga_pbr_material::bind(const ga_mat4f& view, const ga_mat4f& proj, const ga_
 	_program->get_uniform("u_objectPos").set(transform.get_translation());
 	_program->get_uniform("u_base_color").set(transform.get_translation());
 	
-	// TODO : maybe inverse
 	_program->get_uniform("u_eyePos").set(view.inverse().get_translation());
 
     auto end = std::chrono::system_clock::now();

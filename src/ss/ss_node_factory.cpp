@@ -9,23 +9,22 @@
 #include <string>
 
 
-// TODO: Like the only string utility we have
-std::string StringToLower(std::string str) {
-    std::transform(str.begin(), str.end(), str.begin(), [](char c) { return tolower(c); });
-    return str;
-}
 
-
-
+bool SS_Node_Factory::bBoilerplateInitialized = false;
 std::vector<Boilerplate_Var_Data> SS_Node_Factory::boilerplateVarDatas{};
 bool SS_Node_Factory::InitReadInBoilerplateParams(const std::vector<Boilerplate_Var_Data> &varData) {
-    if (not boilerplateVarDatas.empty()) return false;
+    assert((not bBoilerplateInitialized)
+        and "Error: boilerplate parameters can only be initialized once for singleton node factory.");
     boilerplateVarDatas = varData;
+    bBoilerplateInitialized = true;
     return true;
 }
 
+bool SS_Node_Factory::bNodeDataInitialized = false;
 std::vector<Builtin_Node_Data> SS_Node_Factory::nodeDatas{};
 bool SS_Node_Factory::InitReadBuiltinFile(const std::string& file) {
+    assert((not bNodeDataInitialized)
+           and "Error: node data can only be initialized once for singleton node factory.");
     std::ifstream iff(file);
     if (iff.bad()) return false;
     if (not nodeDatas.empty()) return false;
@@ -39,7 +38,7 @@ bool SS_Node_Factory::InitReadBuiltinFile(const std::string& file) {
         std::string str_type, str_name;
         if (token == "out") {
             iff >> str_type >> str_name;
-            GLSL_TYPE t = SS_Parser::string_to_type(str_type);
+            GLSL_TYPE t = SS_Parser::StringToGLSLType(str_type);
             nodeDatas.back().out_vars.emplace_back(t, str_name);
             iff >> token; // token is =
             iff >> token; // token should be non-var element
@@ -54,14 +53,14 @@ bool SS_Node_Factory::InitReadBuiltinFile(const std::string& file) {
             size_t end_t = token.find(';');
             if (is_out) {
                 iff >> str_type >> str_name;
-                nodeDatas.back().out_vars.emplace_back(SS_Parser::string_to_type(str_type), str_name);
+                nodeDatas.back().out_vars.emplace_back(SS_Parser::StringToGLSLType(str_type), str_name);
                 nodeDatas.back().in_liner += "out \%o";
                 nodeDatas.back().in_liner += std::to_string(nodeDatas.back().out_vars.size()); // out var number
             } 
             else if (is_in) {
                 iff >> str_type >> str_name;
                 if (inputs_map.find(str_name) == inputs_map.end()) {
-                    nodeDatas.back().in_vars.emplace_back(SS_Parser::string_to_type(str_type), str_name);
+                    nodeDatas.back().in_vars.emplace_back(SS_Parser::StringToGLSLType(str_type), str_name);
                     inputs_map.insert(std::make_pair(str_name, nodeDatas.back().in_vars.size()));
                 }
                 nodeDatas.back().in_liner += " \%i";
@@ -79,6 +78,7 @@ bool SS_Node_Factory::InitReadBuiltinFile(const std::string& file) {
             }
         }
     }
+    bNodeDataInitialized = true;
     return true;
 }
 
@@ -93,12 +93,12 @@ std::vector<Builtin_Node_Data> SS_Node_Factory::GetMatchingBuiltinNodes(const st
     std::vector<Builtin_Node_Data> builtinDatas;
     std::copy_if(nodeDatas.begin(), nodeDatas.end(),
                  std::back_inserter(builtinDatas),
-                 [query](Builtin_Node_Data& nd) {return StringToLower(nd._name).find(query) != std::string::npos; } );
+                 [query](Builtin_Node_Data& nd) {return SS_Parser::StringToLower(nd._name).find(query) != std::string::npos; } );
     return builtinDatas;
 }
 
 std::vector<Constant_Node_Data> SS_Node_Factory::GetMatchingConstantNodes(const std::string& query) {
-    std::string queryLower = StringToLower(query);
+    std::string queryLower = SS_Parser::StringToLower(query);
     bool all_valid = std::string("constant").find(queryLower) != std::string::npos;
     std::string scalar("number float int double scalar");
     std::string vec2("vec2 vector2");
@@ -128,7 +128,7 @@ std::vector<Constant_Node_Data> SS_Node_Factory::GetMatchingConstantNodes(const 
 }
 
 std::vector<Vector_Op_Node_Data> SS_Node_Factory::GetMatchingVectorNodes(const std::string& query) {
-    std::string queryLower = StringToLower(query);
+    std::string queryLower = SS_Parser::StringToLower(query);
 
     bool all_valid = std::string("swizzle vector swizzle").find(queryLower) != std::string::npos;
     std::string br_vec2("vec2 break vec2 vector2 break vector2");
@@ -157,11 +157,11 @@ std::vector<Vector_Op_Node_Data> SS_Node_Factory::GetMatchingVectorNodes(const s
 
 std::vector<Parameter_Data*> SS_Node_Factory::GetMatchingParamNodes
     (std::string query, const std::vector<Parameter_Data*>& data_in) {
-    query = StringToLower(query);
+    query = SS_Parser::StringToLower(query);
     bool all_valid =  std::string("paramsparameters").find(query) != std::string::npos;
     std::vector<Parameter_Data*> filteredParams;
     for (Parameter_Data* p_data : data_in) {
-        std::string lower_param = StringToLower(std::string(p_data->GetName()));
+        std::string lower_param = SS_Parser::StringToLower(std::string(p_data->GetName()));
         if (all_valid || lower_param.find(query) != std::string::npos) {
             filteredParams.push_back(p_data);
         }
@@ -171,11 +171,11 @@ std::vector<Parameter_Data*> SS_Node_Factory::GetMatchingParamNodes
 
 std::vector<Parameter_Data *> SS_Node_Factory::GetMatchingParamNodes(std::string query,
                                                                      const std::vector<std::unique_ptr<Parameter_Data>> &data_in) {
-    query = StringToLower(query);
+    query = SS_Parser::StringToLower(query);
     bool all_valid =  std::string("paramsparameters").find(query) != std::string::npos;
     std::vector<Parameter_Data*> filteredParams;
     for (const auto& p_data : data_in) {
-        std::string lower_param = StringToLower(std::string(p_data->GetName()));
+        std::string lower_param = SS_Parser::StringToLower(std::string(p_data->GetName()));
         if (all_valid || lower_param.find(query) != std::string::npos) {
             filteredParams.push_back(p_data.get());
         }
@@ -184,12 +184,12 @@ std::vector<Parameter_Data *> SS_Node_Factory::GetMatchingParamNodes(std::string
 }
 
 std::vector<Boilerplate_Var_Data> SS_Node_Factory::GetMatchingBoilerplateNodes(const std::string& query) {
-        std::string queryLower = StringToLower(query);
+        std::string queryLower = SS_Parser::StringToLower(query);
         std::vector<Boilerplate_Var_Data> dataBP;
 
         bool all_valid = std::string("boilerplatedefault").find(query) != std::string::npos;
         for (const auto& bp_var : boilerplateVarDatas) {
-            if (all_valid || StringToLower(std::string(bp_var._name)).find(query) != std::string::npos)
+            if (all_valid || SS_Parser::StringToLower(std::string(bp_var._name)).find(query) != std::string::npos)
                 dataBP.push_back(bp_var);
         }
         return dataBP;

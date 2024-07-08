@@ -6,12 +6,14 @@
 #include <memory>
 
 #include "imgui/imgui.h"
-#include "ss_node_types.h"
+#include "ss_node_types.hpp"
 #include "ss_data.h"
 
 // STATIC SINGLETON CLASS
 class SS_Node_Factory {
 protected:
+    static bool bNodeDataInitialized;
+    static bool bBoilerplateInitialized;
     static std::vector<Builtin_Node_Data> nodeDatas;
     static std::vector<Boilerplate_Var_Data> boilerplateVarDatas;
 public:

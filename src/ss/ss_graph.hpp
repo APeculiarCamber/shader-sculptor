@@ -31,14 +31,14 @@ public: // TODO: scope this
     /*
     for (int id : param_node_ids) {
         graphHook->disconnect_all_pins_by_id(id);
-        graphHook->update_node_by_id(id, SS_Parser::constant_type_to_type(m_gentype, m_type, m_arrSize), m_paramName);
+        graphHook->update_node_by_id(id, SS_Parser::ConstantTypeToGLSLType(m_gentype, m_type, m_arrSize), m_paramName);
     }
     graphHook->invalidate_shaders();
      */
     void UpdateParamDataContents(int paramID, GLSL_TYPE type) override;
     /*
     for (int id : param_node_ids) {
-        graphHook->update_node_by_id(id, SS_Parser::constant_type_to_type(m_gentype, m_type, m_arrSize), m_paramName);
+        graphHook->update_node_by_id(id, SS_Parser::ConstantTypeToGLSLType(m_gentype, m_type, m_arrSize), m_paramName);
     }
     graphHook->invalidate_shaders();
      */
