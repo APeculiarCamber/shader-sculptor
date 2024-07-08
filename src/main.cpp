@@ -20,6 +20,7 @@ const unsigned int SCR_HEIGHT = 1200;
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "ss_boilerplate.hpp"
 
 // Simple helper function to load an image into a OpenGL texture with common settings
 bool LoadTextureFromFile(const char* filename, GLuint* out_texture, int* out_width, int* out_height)

@@ -8,6 +8,7 @@
 #include "../graphics/ga_cube_component.h"
 #include "../graphics/ga_material.h"
 #include "ss_pins.h"
+#include "ss_boilerplate.hpp"
 
 Base_GraphNode::~Base_GraphNode() {
     // TODO: non-virtual version of the most common canIntermed function
@@ -228,7 +229,7 @@ void Base_GraphNode::DrawIntermediateResult(unsigned int framebuffer, const std:
     
     if (_cube) {
         ga_mat4f view{};
-        view.make_lookat_rh(ga_vec3f{2, 2, 3}, ga_vec3f{0, 0, 0}, ga_vec3f{0, 1, 0});
+        view.make_lookat_rh(ga_vec3f{2.0f, 2.0f, 3.0f}, ga_vec3f{0, 0, 0}, ga_vec3f{0, 1, 0});
         ga_mat4f perspective{};
         perspective.make_perspective_rh(ga_degrees_to_radians(45.0f), 1.0f, 0.1f, 10000.0f);
 

@@ -18,7 +18,6 @@
 #include "ss_data.h"
 
 // TODO: see about these forward declares
-class SS_Graph;
 class SS_Boilerplate_Manager;
 
 
