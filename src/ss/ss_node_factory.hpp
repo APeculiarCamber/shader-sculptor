@@ -7,7 +7,7 @@
 
 #include "imgui/imgui.h"
 #include "ss_node_types.hpp"
-#include "ss_data.h"
+#include "ss_data.hpp"
 
 // STATIC SINGLETON CLASS
 class SS_Node_Factory {

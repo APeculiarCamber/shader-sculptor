@@ -1,5 +1,5 @@
-#ifndef SHADER_SCUPLTOR_SS_DATA_H
-#define SHADER_SCUPLTOR_SS_DATA_H
+#ifndef SHADER_SCUPLTOR_SS_DATA_HPP
+#define SHADER_SCUPLTOR_SS_DATA_HPP
 
 // Scalar, Vecn, Matn, Texture, sampler id
 
@@ -79,4 +79,4 @@ struct Vector_Op_Node_Data {
 };
 
 
-#endif //SHADER_SCUPLTOR_SS_DATA_H
+#endif //SHADER_SCUPLTOR_SS_DATA_HPP

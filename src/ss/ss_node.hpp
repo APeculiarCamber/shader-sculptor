@@ -11,11 +11,11 @@
 #include <GLFW/glfw3.h>
 #include <memory>
 
-#include "ss_data.h"
+#include "ss_data.hpp"
 #include "../imgui/imgui.h"
 #include "ss_node_types.hpp"
 #include "ss_pins.hpp"
-#include "ss_data.h"
+#include "ss_data.hpp"
 #include "ga_cube_component.h"
 
 #define NODE_TEXTURE_NULL 0xFFFFFFFF
