@@ -21,7 +21,7 @@
 class ga_cube_component
 {
 public:
-	ga_cube_component(std::string& source_vs, std::string& source_fs, class SS_Boilerplate_Manager* bp);
+	ga_cube_component(std::string& source_vs, std::string& source_fs, std::unique_ptr<ga_material>&& bp);
 	virtual ~ga_cube_component();
 
 	std::unique_ptr<ga_material> _material;

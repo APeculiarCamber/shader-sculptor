@@ -200,10 +200,8 @@ bool Base_GraphNode::GenerateIntermediateResultFrameBuffers() {
     return true;
 }
 
-// TODO: poor coupling of SS_Boilerplate_Manager, this should be be passed so far down
-void Base_GraphNode::CompileIntermediateCode(SS_Boilerplate_Manager* bp) {
-    delete _cube;
-    _cube = new ga_cube_component(_vert_str, _frag_str, bp);
+void Base_GraphNode::CompileIntermediateCode(std::unique_ptr<ga_material>&& material) {
+    _cube.reset(new ga_cube_component(_vert_str, _frag_str, std::move(material)));
     is_build_dirty = false;
     //unsigned int err = glGetError();
 }
@@ -699,7 +697,7 @@ Boilerplate_Var_Node::Boilerplate_Var_Node(Boilerplate_Var_Data data, SS_Boilerp
     _name = data._name;
 
     frag_node = data.frag_only;
-    _bp_manager = bp;
+    _bpManager = bp;
 
     num_input = 0;
     num_output = 1;
@@ -715,7 +713,7 @@ Boilerplate_Var_Node::Boilerplate_Var_Node(Boilerplate_Var_Data data, SS_Boilerp
 
 
 std::string Boilerplate_Var_Node::RequestOutput(int out_index) {
-    return _bp_manager->GetIntermediateResultCodeForVar(_name);
+    return _bpManager->GetIntermediateResultCodeForVar(_name);
 }
 std::string Boilerplate_Var_Node::ProcessForCode() {
     return "";

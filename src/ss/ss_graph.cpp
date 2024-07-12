@@ -17,12 +17,12 @@ SS_Graph::SS_Graph(SS_Boilerplate_Manager* bp) {
     _dragNode = nullptr;
     _dragPin = nullptr;
 
-    m_bp_manager = std::unique_ptr<SS_Boilerplate_Manager>(bp);
-    auto* vn = new Terminal_Node(m_bp_manager->GetTerminalVertPinData(), ++m_currentNodeID, ImVec2(300, 300));
+    m_BPManager = std::unique_ptr<SS_Boilerplate_Manager>(bp);
+    auto* vn = new Terminal_Node(m_BPManager->GetTerminalVertPinData(), ++m_currentNodeID, ImVec2(300, 300));
     m_nodes.insert(std::make_pair(m_currentNodeID, vn));
-    auto* fn = new Terminal_Node(m_bp_manager->GetTerminalFragPinData(), ++m_currentNodeID, ImVec2(300, 500));
+    auto* fn = new Terminal_Node(m_BPManager->GetTerminalFragPinData(), ++m_currentNodeID, ImVec2(300, 500));
     m_nodes.insert(std::make_pair(m_currentNodeID, fn));
-    m_bp_manager->SetTerminalNodes(vn, fn);
+    m_BPManager->SetTerminalNodes(vn, fn);
     this->GenerateShaderTextAndPropagate();
 
     m_searchBuffer[0] = '\0';
@@ -225,7 +225,7 @@ void SS_Graph::HandleInput() {
         for (auto nd : bp_node_data_list) {
             if (ImGui::Button(nd._name.c_str())) {
                 Boilerplate_Var_Node* n = SS_Node_Factory::BuildBoilerplateVarNode(
-                        nd, m_bp_manager.get(), ++m_currentNodeID,
+                        nd, m_BPManager.get(), ++m_currentNodeID,
                         add_pos - (m_drawPosOffset + m_dragPosOffset));
                 m_nodes.insert(std::make_pair(m_currentNodeID, (Base_GraphNode*)n));
                 ImGui::CloseCurrentPopup(); ImGui::EndPopup();
@@ -543,28 +543,28 @@ void SS_Graph::SetFinalShaderTextByConstructOrders(const std::vector<Base_GraphN
     {
         std::ostringstream vertIss;
         // -- header
-        vertIss << m_bp_manager->GetVertInitBoilerplateDeclares() << '\n';
+        vertIss << m_BPManager->GetVertInitBoilerplateDeclares() << '\n';
         WriteParameterData(vertIss, m_paramDatas);
         // -- main body
-        vertIss << "\nvoid main() {\n" << m_bp_manager->GetVertInitBoilerplateCode() << '\n';
+        vertIss << "\nvoid main() {\n" << m_BPManager->GetVertInitBoilerplateCode() << '\n';
         for (Base_GraphNode* node: vertOrder) {
             vertIss << "\t" << node->ProcessForCode() << "  // Node " << node->GetName() << ", id=" << node->GetID() << '\n';
         }
-        vertIss << m_bp_manager->GetVertTerminalBoilerplateCode() << "\n}\n";
+        vertIss << m_BPManager->GetVertTerminalBoilerplateCode() << "\n}\n";
         m_currentVertCode = vertIss.str();
     }
     // MAXIMAL FRAG BUILD
     {
         std::ostringstream fragIss;
         // -- header
-        fragIss << m_bp_manager->GetFragInitBoilerplateDeclares() << '\n';
+        fragIss << m_BPManager->GetFragInitBoilerplateDeclares() << '\n';
         WriteParameterData(fragIss, m_paramDatas);
         // -- main body
-        fragIss << "\nvoid main() {\n" << m_bp_manager->GetFragInitBoilerplateCode() << '\n';
+        fragIss << "\nvoid main() {\n" << m_BPManager->GetFragInitBoilerplateCode() << '\n';
         for (Base_GraphNode* node: fragOrder) {
             fragIss << "\t" << node->ProcessForCode() << "  // Node " << node->GetName() << ", id=" << node->GetID() << '\n';
         }
-        fragIss << m_bp_manager->GetFragTerminalBoilerplateCode() << "\n}\n";
+        fragIss << m_BPManager->GetFragTerminalBoilerplateCode() << "\n}\n";
         m_currentFragCode = fragIss.str();
     }
 }
@@ -572,40 +572,40 @@ void SS_Graph::SetFinalShaderTextByConstructOrders(const std::vector<Base_GraphN
 void SS_Graph::PropagateIntermediateVertexCodeToNodes(const std::vector<Base_GraphNode*>& vertOrder) {
     std::ostringstream vertIss;
     // -- header
-    vertIss << m_bp_manager->GetFragInitBoilerplateDeclares() << '\n';
+    vertIss << m_BPManager->GetFragInitBoilerplateDeclares() << '\n';
     WriteParameterData(vertIss, m_paramDatas);
     // -- main body
-    vertIss << "\nvoid main() {\n" << m_bp_manager->GetFragInitBoilerplateCode() << '\n';
+    vertIss << "\nvoid main() {\n" << m_BPManager->GetFragInitBoilerplateCode() << '\n';
     for (Base_GraphNode* node: vertOrder) {
         vertIss << "\t" << node->ProcessForCode() << "  // Node " << node->GetName() << ", id=" << node->GetID() << '\n';
         SetIntermediateCodeForNode(vertIss.str(), node);
     }
     // -- compile
     for (Base_GraphNode* node: vertOrder) {
-        node->CompileIntermediateCode(m_bp_manager.get());
+        node->CompileIntermediateCode(m_BPManager->MakeMaterial());
     }
 }
 
 void SS_Graph::PropagateIntermediateFragmentCodeToNodes(const std::vector<Base_GraphNode*>& fragOrder) {
     std::ostringstream fragIss;
     // -- header
-    fragIss << m_bp_manager->GetFragInitBoilerplateDeclares() << '\n';
+    fragIss << m_BPManager->GetFragInitBoilerplateDeclares() << '\n';
     WriteParameterData(fragIss, m_paramDatas);
     // -- main body
-    fragIss << "\nvoid main() {\n" << m_bp_manager->GetFragInitBoilerplateCode() << '\n';
+    fragIss << "\nvoid main() {\n" << m_BPManager->GetFragInitBoilerplateCode() << '\n';
     for (Base_GraphNode* node: fragOrder) {
         fragIss << "\t" << node->ProcessForCode() << "  // Node " << node->GetName() << ", id=" << node->GetID() << '\n';
         SetIntermediateCodeForNode(fragIss.str(), node);
     }
     // -- compile
     for (Base_GraphNode* node: fragOrder) {
-        node->CompileIntermediateCode(m_bp_manager.get());
+        node->CompileIntermediateCode(m_BPManager->MakeMaterial());
     }
 }
 
 void SS_Graph::GenerateShaderTextAndPropagate() {
-    Terminal_Node* vn = m_bp_manager->GetTerminalVertexNode();
-    Terminal_Node* fn = m_bp_manager->GetTerminalFragNode();
+    Terminal_Node* vn = m_BPManager->GetTerminalVertexNode();
+    Terminal_Node* fn = m_BPManager->GetTerminalFragNode();
     std::vector<Base_GraphNode*> vertOrder = ConstructTopologicalOrder(vn);
     std::vector<Base_GraphNode*> fragOrder = ConstructTopologicalOrder(fn);
 

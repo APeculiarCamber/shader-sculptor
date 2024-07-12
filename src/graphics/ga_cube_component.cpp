@@ -12,7 +12,7 @@
 #include "ss_boilerplate.hpp"
 
 ga_cube_component::ga_cube_component(std::string& source_vs, std::string& source_fs,
-	SS_Boilerplate_Manager* bp) : _material(bp->MakeMaterial())
+	std::unique_ptr<ga_material>&& material) : _material(std::move(material))
 {
 	_transform.make_identity();
 	_material->init(source_vs, source_fs);

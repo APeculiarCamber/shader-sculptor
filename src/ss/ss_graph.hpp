@@ -93,7 +93,7 @@ protected:
     std::vector<std::pair<unsigned int, std::string> > m_images;
     char m_imgBuffer[256]{};
 
-    std::unique_ptr<SS_Boilerplate_Manager> m_bp_manager;
+    std::unique_ptr<SS_Boilerplate_Manager> m_BPManager;
     std::vector<std::unique_ptr<Parameter_Data>> m_paramDatas;
 
     std::string m_currentFragCode;

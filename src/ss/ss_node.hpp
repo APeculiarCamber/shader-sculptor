@@ -16,10 +16,9 @@
 #include "ss_node_types.hpp"
 #include "ss_pins.hpp"
 #include "ss_data.h"
+#include "ga_cube_component.h"
 
 #define NODE_TEXTURE_NULL 0xFFFFFFFF
-
-class SS_Boilerplate_Manager;
 
 // BASE CLASS FOR ALL GRAPH NODES, HANDLES MOST OF THE DRAWING
 class Base_GraphNode {
@@ -51,7 +50,7 @@ public:
     virtual void InformOfConnect(Base_InputPin* in_pin, Base_OutputPin* out_pin) {}
 
     bool GenerateIntermediateResultFrameBuffers();
-    void CompileIntermediateCode(SS_Boilerplate_Manager* bp);
+    void CompileIntermediateCode(std::unique_ptr<ga_material>&& material);
     void DrawIntermediateResult(unsigned int framebuffer, const std::vector<std::unique_ptr<Parameter_Data>>& params);
 
     unsigned int GetImageTextureId() const { return nodes_rendered_texture; }
@@ -97,7 +96,7 @@ protected:
     int _id;
     ImVec2 _old_pos;
     ImVec2 _pos;
-    class ga_cube_component* _cube = nullptr;
+    std::unique_ptr<ga_cube_component> _cube = nullptr;
 
     // BOUNDS
     ImVec2 rect_size;
@@ -210,6 +209,8 @@ public:
      NODE_TYPE GetNodeType() override { return NODE_TERMINAL; };
 };
 
+
+class SS_Boilerplate_Manager;
 class Boilerplate_Var_Node : public Base_GraphNode {
 public:
     Boilerplate_Var_Node(Boilerplate_Var_Data data, SS_Boilerplate_Manager* bp, int id, ImVec2 pos);
@@ -217,7 +218,7 @@ public:
 
 
     bool frag_node;
-    SS_Boilerplate_Manager* _bp_manager;
+    SS_Boilerplate_Manager* _bpManager;
     NODE_TYPE GetNodeType() override { return NODE_BOILER_VAR; };
     
     std::string RequestOutput(int out_index) override;
