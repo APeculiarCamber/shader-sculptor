@@ -14,40 +14,40 @@ public:
     ~SS_Graph() override;
    // 0 for input change needed, 1 for no, 2 for output changed needed
    // -1 for failed
-   Base_GraphNode* get_node(int id);
-    bool delete_node(int id);
+   Base_GraphNode* GetNode(int id);
+    bool DeleteNode(int id);
 
-    bool disconnect_all_pins_by_id(int id);
+    bool DisconnectAllPinsByNodeId(int id);
 
-    void invalidate_shaders();
+    void InvalidateShaders();
 
     void InformOfDelete(int paramID) override;
     /*
     for (int id : param_node_ids) {
-        graphHook->disconnect_all_pins_by_id(id);
+        graphHook->DisconnectAllPinsByNodeId(id);
         graphHook->update_node_by_id(id, SS_Parser::ConstantTypeToGLSLType(m_gentype, m_type, m_arrSize), m_paramName);
     }
-    graphHook->invalidate_shaders();
+    graphHook->InvalidateShaders();
      */
     void UpdateParamDataContents(int paramID, GLSL_TYPE type) override;
     /*
     for (int id : param_node_ids) {
         graphHook->update_node_by_id(id, SS_Parser::ConstantTypeToGLSLType(m_gentype, m_type, m_arrSize), m_paramName);
     }
-    graphHook->invalidate_shaders();
+    graphHook->InvalidateShaders();
      */
     void UpdateParamDataName(int paramID, const char* name) override;
 
 
-    void handle_input();
-    void draw();
-    bool draw_saving_window();
-    bool draw_credits();
-    void draw_param_panels();
-    void draw_node_context_panel() const;
-    void draw_image_loader();
-    void draw_controls();
-    void draw_menu_buttons();
+    void HandleInput();
+    void Draw();
+    bool DrawSavingWindow();
+    bool DrawCreditsWindow();
+    void DrawParamPanels();
+    void DrawNodeContextWindow() const;
+    void DrawImageLoaderWindow();
+    void DrawControlsWindow();
+    void DrawMenuButtons();
 
 
     /************************************************

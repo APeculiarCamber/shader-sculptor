@@ -38,14 +38,14 @@ SS_Graph::~SS_Graph() {
 }
 
 
-Base_GraphNode* SS_Graph::get_node(int id) {
+Base_GraphNode* SS_Graph::GetNode(int id) {
     auto it = m_nodes.find(id);
     if (it == m_nodes.end()) return nullptr;
     return it->second.get();
 }
 
 /* DELETE a node with id from the graph and disconnect all pins attached to it. */
-bool SS_Graph::delete_node(int id) {
+bool SS_Graph::DeleteNode(int id) {
     auto it = m_nodes.find(id);
     if (it == m_nodes.end()) return false;
     if (!it->second->CanBeDeleted()) return false;
@@ -64,19 +64,17 @@ bool SS_Graph::delete_node(int id) {
         assert(std::find(paramNodesOfID.begin(), paramNodesOfID.end(), pn->GetID()) != paramNodesOfID.end());
         paramNodesOfID.erase(std::find(paramNodesOfID.begin(), paramNodesOfID.end(), pn->GetID()));
     }
-    delete n; // no LEAKS!
-
     return true;
 }
 
-bool SS_Graph::disconnect_all_pins_by_id(int id) {
+bool SS_Graph::DisconnectAllPinsByNodeId(int id) {
     auto it = m_nodes.find(id);
     if (it == m_nodes.end()) return false;
     it->second->DisconnectAllPins();
     return true;
 }
 
-void SS_Graph::invalidate_shaders() {
+void SS_Graph::InvalidateShaders() {
     m_currentFragCode.clear();
     m_currentVertCode.clear();
 }
@@ -85,7 +83,7 @@ void SS_Graph::AddParameter() {
     m_paramDatas.emplace_back(new Parameter_Data(SS_Float, SS_Vec3, 1, ++m_paramID, this));
 }
 
-void SS_Graph::draw_param_panels() {
+void SS_Graph::DrawParamPanels() {
     ImGui::Begin("Parameters", nullptr, ImGuiWindowFlags_NoScrollbar);
     ImGui::BeginChild("Red",  ImGui::GetWindowSize() - ImVec2(0, 50), true, ImGuiWindowFlags_HorizontalScrollbar);
     for (auto& p_data : m_paramDatas) {
@@ -99,7 +97,7 @@ void SS_Graph::draw_param_panels() {
     ImGui::End();
 }
 
-unsigned int try_to_gen_texture(const char* img_file) {
+unsigned int GenerateTextureFrom(const char* img_file) {
     unsigned int texture = 0;
     int width, height, nrChannels;
     unsigned char *data = stbi_load(img_file, &width, &height, &nrChannels, STBI_rgb);
@@ -123,7 +121,7 @@ unsigned int try_to_gen_texture(const char* img_file) {
     return texture;  
 }
 
-void SS_Graph::draw_image_loader() {
+void SS_Graph::DrawImageLoaderWindow() {
     ImGui::Begin("Image Loader", nullptr, ImGuiWindowFlags_NoScrollbar);
     
     ImGui::BeginChild("ImgLoads",  ImGui::GetWindowSize() - ImVec2(0, 50), true, ImGuiWindowFlags_HorizontalScrollbar);
@@ -144,7 +142,7 @@ void SS_Graph::draw_image_loader() {
     ImGui::InputTextWithHint("###Input Image", "Image Filepath", m_imgBuffer, 256);
     ImGui::SameLine();
     if (ImGui::Button("Add Image")) {
-        unsigned int tex = try_to_gen_texture(m_imgBuffer);
+        unsigned int tex = GenerateTextureFrom(m_imgBuffer);
         if (tex > 0) {
             m_images.emplace_back(tex, std::string(m_imgBuffer));
         }
@@ -152,9 +150,8 @@ void SS_Graph::draw_image_loader() {
     ImGui::End();
 }
 
-void SS_Graph::handle_input() {
+void SS_Graph::HandleInput() {
     //  MENU
-    
     ImGui::SetNextWindowSize(ImVec2(250, 400));
     if (ImGui::BeginPopupContextWindow())
     {
@@ -257,14 +254,14 @@ void SS_Graph::handle_input() {
             hover_node->IsDisplayButtonHoveredOver(m_pos - (m_drawPosOffset + m_dragPosOffset));
     if (display_button_hovered) {
         ImGui::BeginTooltip();
-        ImGui::Text("DISPLAY INTERMED");
+        ImGui::Text("DISPLAY INTERMEDIATE");
         ImGui::EndTooltip();
     }
     if (ImGui::IsKeyPressed(ImGuiKey_Delete) && hover_id != -1) {
         if (hover_pin && hover_pin->HasConnections()) {
             hover_pin->DisconnectAllFrom(true);
         } else {
-            delete_node(hover_id);
+            DeleteNode(hover_id);
         }
         _selectedNode =  nullptr;
         _dragNode = nullptr;
@@ -317,7 +314,7 @@ void SS_Graph::handle_input() {
     }
 }
 
-void SS_Graph::draw_controls() {
+void SS_Graph::DrawControlsWindow() {
     if (!m_bControlsUp) return;
     ImGui::Begin("CONTROLS", &m_bControlsUp);
     ImGui::Text(R"(MENU BUTTONS: SEE TOOLTIPS
@@ -328,7 +325,7 @@ DELETE: DELETE HOVERED NODE OR PIN)");
     ImGui::End();
 }
 
-bool SS_Graph::draw_saving_window() {
+bool SS_Graph::DrawSavingWindow() {
     bool bReturn = true;
     ImGui::SetNextWindowFocus();
     ImGui::Begin("Save LOCATION");
@@ -355,19 +352,19 @@ bool SS_Graph::draw_saving_window() {
     return bReturn;
 }
 
-bool SS_Graph::draw_credits() {
+bool SS_Graph::DrawCreditsWindow() {
     ImGui::Begin("CREDITS", &m_bCreditsUp);
     ImGui::Text(R"(DEVELOPER: Jay Idema
 
 A Massive Thanks To:
-Professor Eric Ameres
-Joey de Vries, Author of LearnOpenGL, from which a good handful of PBR-like shader code was used
+Professor Eric Ameres for advising
+Joey de Vries, Author of LearnOpenGL, from which a good handful of PBR-like boilerplate shader code was used
 Omar Cornut for Dear IMGUI)");
     ImGui::End();
     return m_bCreditsUp;
 }
 
-void handle_menu_tooltip(const char* tip) {
+void HandleMenuTooltip(const char* tip) {
     if (ImGui::IsItemHovered()) {
         ImGui::BeginTooltip();
         ImGui::Text("%s", tip);
@@ -375,20 +372,20 @@ void handle_menu_tooltip(const char* tip) {
     }
 }
 
-void SS_Graph::draw_menu_buttons() {
+void SS_Graph::DrawMenuButtons() {
     if (ImGui::BeginMenuBar()) {
-        handle_menu_tooltip("Build and link the shaders, re-compiles dirty intermediate results");
+        HandleMenuTooltip("Build and link the shaders, re-compiles dirty intermediate results");
         if (ImGui::Button("BUILD SHADERS")) {
             this->GenerateShaderTextAndPropagate();
         }
-        handle_menu_tooltip("Build and link the fragment shader");
+        HandleMenuTooltip("Build and link the fragment shader");
         if (ImGui::Button("SAVE NODES")) {
             m_bIsSaving = true;
             sprintf(m_saveBuffer, ".");
             sprintf(m_saveBuffer + 128, "frag.glsl");
             sprintf(m_saveBuffer + 192, "vert.glsl");
         }
-        handle_menu_tooltip("Save out the source code");
+        HandleMenuTooltip("Save out the source code");
         if (ImGui::Button("SHOW CONTROLS"))
             m_bControlsUp = !m_bControlsUp;
         if (ImGui::Button("SHOW CREDITS"))
@@ -397,16 +394,16 @@ void SS_Graph::draw_menu_buttons() {
     ImGui::EndMenuBar();
 }
 
-void SS_Graph::draw() {
+void SS_Graph::Draw() {
     if (m_bIsSaving)
-        m_bIsSaving = draw_saving_window();
+        m_bIsSaving = DrawSavingWindow();
     if (m_bCreditsUp)
-        m_bCreditsUp = draw_credits();
-        
-    draw_param_panels();
-    draw_node_context_panel();
-    draw_image_loader();
-    draw_controls();
+        m_bCreditsUp = DrawCreditsWindow();
+
+    DrawParamPanels();
+    DrawNodeContextWindow();
+    DrawImageLoaderWindow();
+    DrawControlsWindow();
     
     // drawn m_nodes, may want to decrease view size
     for (const auto& n_it : m_nodes) {
@@ -418,10 +415,10 @@ void SS_Graph::draw() {
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));
     ImGui::Begin("SHADER SCULPTER", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_MenuBar);
-    draw_menu_buttons();
+    DrawMenuButtons();
     
     if (!m_bIsSaving)
-        handle_input();
+        HandleInput();
     ImDrawList* dl = ImGui::GetWindowDrawList(); 
     for (auto& p_node : m_nodes)
         p_node.second->SetBounds(1);
@@ -438,7 +435,7 @@ void SS_Graph::draw() {
 }
 
 
-void SS_Graph::draw_node_context_panel() const {
+void SS_Graph::DrawNodeContextWindow() const {
     ImGui::Begin("Node Context Panel");
     ImGui::Text("NODE:");
     if (_selectedNode) {
@@ -458,12 +455,12 @@ void SS_Graph::draw_node_context_panel() const {
                     case SS_Mat3:
                     case SS_Mat4:
                     case SS_MAT:
-                        ImGui::Text("ERROR:\nTried to contextualize Mat.\nNot yet supported.");
+                        ImGui::Text("WARNING:\nMatrix context not yet supported.");
                         break;
                 }
             }
         } else {
-            ImGui::Text("NOTHING FOR NON_CONSTANT");
+            ImGui::Text("Non-Constant Node");
         }
     }
     ImGui::End();
@@ -482,8 +479,8 @@ std::unordered_map<Base_GraphNode*, int> GetInDegreesOfAllNodes(Base_GraphNode* 
         Base_GraphNode* node = processStack.top();
         processStack.pop();
         for (size_t i = 0; i < node->GetInputPinCount(); i++) {
-            if (not node->GetInputPin(i).input) continue;
-            Base_GraphNode* inputNode = node->GetInputPin(i).input->owner;
+            if (not node->GetInputPin((int)i).input) continue;
+            Base_GraphNode* inputNode = node->GetInputPin((int)i).input->owner;
             if (inDegrees.find(inputNode) != inDegrees.end()) {
                 inDegrees.insert({inputNode, inputNode->GetInputPinCount()});
                 processStack.push(inputNode);
@@ -619,10 +616,10 @@ void SS_Graph::GenerateShaderTextAndPropagate() {
 }
 
 void SS_Graph::InformOfDelete(int paramID) {
-    // Need to make a copy here, delete_node modifies m_paramIDsToNodeIDs
+    // Need to make a copy here, DeleteNode modifies m_paramIDsToNodeIDs
     const auto nodeIDs = m_paramIDsToNodeIDs[paramID];
     for (int nID : nodeIDs) {
-        delete_node(nID);
+        DeleteNode(nID);
     }
     m_paramIDsToNodeIDs.erase(paramID);
 }
@@ -630,18 +627,18 @@ void SS_Graph::InformOfDelete(int paramID) {
 void SS_Graph::UpdateParamDataContents(int paramID, GLSL_TYPE type) {
     const auto nodeIDs = m_paramIDsToNodeIDs[paramID];
     for (int nID : nodeIDs) {
-        disconnect_all_pins_by_id(nID);
-        auto* pn = (Param_Node*)get_node(nID);
+        DisconnectAllPinsByNodeId(nID);
+        auto* pn = (Param_Node*) GetNode(nID);
         pn->update_type_from_param(type);
     }
-    invalidate_shaders();
+    InvalidateShaders();
 }
 
 void SS_Graph::UpdateParamDataName(int paramID, const char *name) {
     const auto nodeIDs = m_paramIDsToNodeIDs[paramID];
     for (int nID : nodeIDs) {
-        auto* pn = (Param_Node*)get_node(nID);
+        auto* pn = (Param_Node*) GetNode(nID);
         pn->SetName(name);
     }
-    invalidate_shaders();
+    InvalidateShaders();
 }

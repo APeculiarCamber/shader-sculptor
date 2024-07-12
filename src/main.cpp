@@ -100,7 +100,7 @@ int main()
         ImGui::NewFrame();
 
         if (graph)
-            graph->draw();
+            graph->Draw();
         else
             graph = DrawGraphTypePrompt();
     
