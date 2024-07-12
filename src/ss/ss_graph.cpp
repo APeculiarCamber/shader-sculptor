@@ -8,19 +8,26 @@
 #include <algorithm>
 #include <stack>
 
+#ifndef CMAKE_ROOT_DIR
+#define CMAKE_ROOT_DIR "./"
+#endif
+
 /**
  * @brief Construct a new ss graph::ss graph object
  */
 SS_Graph::SS_Graph(SS_Boilerplate_Manager* bp) {
     glGenFramebuffers(1, &m_mainFramebuffer);
-
+    auto error = glGetError();
+    if (error != GL_NO_ERROR) { assert(not "Failed to create Framebuffer!"); }
     _dragNode = nullptr;
     _dragPin = nullptr;
 
     m_BPManager = std::unique_ptr<SS_Boilerplate_Manager>(bp);
-    auto* vn = new Terminal_Node(m_BPManager->GetTerminalVertPinData(), ++m_currentNodeID, ImVec2(300, 300));
+    Terminal_Node* vn = SS_Node_Factory::BuildTerminalNode(
+            m_BPManager->GetTerminalVertPinData(), ++m_currentNodeID, ImVec2(300, 300));
     m_nodes.insert(std::make_pair(m_currentNodeID, vn));
-    auto* fn = new Terminal_Node(m_BPManager->GetTerminalFragPinData(), ++m_currentNodeID, ImVec2(300, 500));
+    Terminal_Node* fn = SS_Node_Factory::BuildTerminalNode(
+            m_BPManager->GetTerminalFragPinData(), ++m_currentNodeID, ImVec2(300, 500));
     m_nodes.insert(std::make_pair(m_currentNodeID, fn));
     m_BPManager->SetTerminalNodes(vn, fn);
     this->GenerateShaderTextAndPropagate();
@@ -29,7 +36,7 @@ SS_Graph::SS_Graph(SS_Boilerplate_Manager* bp) {
     m_imgBuffer[0] = '\0';
 
     // Static load of node factory data, NOTE: ASSUMES GRAPH SINGLETON!
-    assert(SS_Node_Factory::InitReadBuiltinFile("data/builtin_glsl_funcs.txt"));
+    assert(SS_Node_Factory::InitReadBuiltinFile(std::string(CMAKE_ROOT_DIR) + "data/builtin_glsl_funcs.txt"));
     assert(SS_Node_Factory::InitReadInBoilerplateParams(bp->GetUsableVariables()));
 }
 
@@ -85,7 +92,7 @@ void SS_Graph::AddParameter() {
 
 void SS_Graph::DrawParamPanels() {
     ImGui::Begin("Parameters", nullptr, ImGuiWindowFlags_NoScrollbar);
-    ImGui::BeginChild("Red",  ImGui::GetWindowSize() - ImVec2(0, 50), true, ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::BeginChild("ParamListRed",  ImGui::GetWindowSize() - ImVec2(0, 50), true, ImGuiWindowFlags_HorizontalScrollbar);
     for (auto& p_data : m_paramDatas) {
         p_data->Draw(this);
     }
@@ -162,20 +169,8 @@ void SS_Graph::HandleInput() {
         _dragNode = nullptr;
         _dragPin = nullptr;
 
-        // SEARCH BAR
+        // SEARCH BAR, TODO: duplicate code here, refactor to shared function
         ImGui::InputText("Search", m_searchBuffer, 256);
-        // BUILTIN
-        auto built_node_data_list = SS_Node_Factory::GetMatchingBuiltinNodes(std::string(m_searchBuffer));
-        if (not built_node_data_list.empty()) ImGui::Text("Builtin:");
-        for (auto nd : built_node_data_list) {
-            if (ImGui::Button(nd._name.c_str())) {
-                Builtin_GraphNode* n = SS_Node_Factory::BuildBuiltinNode(nd, ++m_currentNodeID,
-                                                                     add_pos - (m_drawPosOffset + m_dragPosOffset));
-                m_nodes.insert(std::make_pair(m_currentNodeID, (Base_GraphNode*)n));
-                ImGui::CloseCurrentPopup(); ImGui::EndPopup();
-                return;
-            }
-        }
         // CONSTANT
         auto const_node_data_list = SS_Node_Factory::GetMatchingConstantNodes(std::string(m_searchBuffer));
         if (not const_node_data_list.empty()) ImGui::Text("CONSTANT:");
@@ -227,6 +222,18 @@ void SS_Graph::HandleInput() {
                 Boilerplate_Var_Node* n = SS_Node_Factory::BuildBoilerplateVarNode(
                         nd, m_BPManager.get(), ++m_currentNodeID,
                         add_pos - (m_drawPosOffset + m_dragPosOffset));
+                m_nodes.insert(std::make_pair(m_currentNodeID, (Base_GraphNode*)n));
+                ImGui::CloseCurrentPopup(); ImGui::EndPopup();
+                return;
+            }
+        }
+        // BUILTIN
+        auto built_node_data_list = SS_Node_Factory::GetMatchingBuiltinNodes(std::string(m_searchBuffer));
+        if (not built_node_data_list.empty()) ImGui::Text("Builtin:");
+        for (auto nd : built_node_data_list) {
+            if (ImGui::Button(nd._name.c_str())) {
+                Builtin_GraphNode* n = SS_Node_Factory::BuildBuiltinNode(nd, ++m_currentNodeID,
+                                                                         add_pos - (m_drawPosOffset + m_dragPosOffset));
                 m_nodes.insert(std::make_pair(m_currentNodeID, (Base_GraphNode*)n));
                 ImGui::CloseCurrentPopup(); ImGui::EndPopup();
                 return;
@@ -414,7 +421,8 @@ void SS_Graph::Draw() {
     const auto& io = ImGui::GetIO();
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));
-    ImGui::Begin("SHADER SCULPTER", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_MenuBar);
+    ImGui::Begin("SHADER SCULPTOR", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove
+        | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_MenuBar);
     DrawMenuButtons();
     
     if (!m_bIsSaving)
@@ -470,19 +478,27 @@ void SS_Graph::DrawNodeContextWindow() const {
 /************************************************
  * *********************CONSTRUCTION **************************/
 
+int GetInDegreesOfNode(Base_GraphNode* node) {
+    int pinCount = 0;
+    for (int ip = 0; ip < node->GetInputPinCount(); ++ip) {
+        if (node->GetInputPin(ip).input) pinCount++;
+    }
+    return pinCount;
+}
+
 std::unordered_map<Base_GraphNode*, int> GetInDegreesOfAllNodes(Base_GraphNode* root) {
     std::unordered_map<Base_GraphNode*, int> inDegrees;
     std::stack<Base_GraphNode*> processStack;
     processStack.push(root);
-    inDegrees.insert({root, root->GetInputPinCount()});
+    inDegrees.insert({root, GetInDegreesOfNode(root)});
     while (not processStack.empty()) {
         Base_GraphNode* node = processStack.top();
         processStack.pop();
-        for (size_t i = 0; i < node->GetInputPinCount(); i++) {
-            if (not node->GetInputPin((int)i).input) continue;
-            Base_GraphNode* inputNode = node->GetInputPin((int)i).input->owner;
-            if (inDegrees.find(inputNode) != inDegrees.end()) {
-                inDegrees.insert({inputNode, inputNode->GetInputPinCount()});
+        for (int i = 0; i < node->GetInputPinCount(); i++) {
+            if (not node->GetInputPin(i).input) continue;
+            Base_GraphNode* inputNode = node->GetInputPin(i).input->owner;
+            if (inDegrees.find(inputNode) == inDegrees.end()) {
+                inDegrees.insert({inputNode, GetInDegreesOfNode(inputNode)});
                 processStack.push(inputNode);
             }
         }
@@ -505,7 +521,7 @@ std::vector<Base_GraphNode*> SS_Graph::ConstructTopologicalOrder(Base_GraphNode*
         processStack.pop();
         topOrder.push_back(node);
 
-        for (size_t o = 0; o < node->GetOutputPinCount(); ++o) {
+        for (int o = 0; o < node->GetOutputPinCount(); ++o) {
             for (const auto& conn : node->GetOutputPin(o).output) {
                 Base_GraphNode* inputNode = conn->owner;
                 inDegrees[inputNode] -= 1;
@@ -608,11 +624,18 @@ void SS_Graph::GenerateShaderTextAndPropagate() {
     Terminal_Node* fn = m_BPManager->GetTerminalFragNode();
     std::vector<Base_GraphNode*> vertOrder = ConstructTopologicalOrder(vn);
     std::vector<Base_GraphNode*> fragOrder = ConstructTopologicalOrder(fn);
-
+    if (vertOrder.empty() or fragOrder.empty()) {
+        assert(not "ERROR");
+    }
     SetFinalShaderTextByConstructOrders(vertOrder, fragOrder);
 
     PropagateIntermediateVertexCodeToNodes(vertOrder);
     PropagateIntermediateFragmentCodeToNodes(fragOrder);
+
+    vn->SetShaderCode(m_currentFragCode, m_currentVertCode);
+    fn->SetShaderCode(m_currentFragCode, m_currentVertCode);
+    vn->CompileIntermediateCode(m_BPManager->MakeMaterial());
+    fn->CompileIntermediateCode(m_BPManager->MakeMaterial());
 }
 
 void SS_Graph::InformOfDelete(int paramID) {

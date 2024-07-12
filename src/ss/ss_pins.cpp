@@ -93,7 +93,7 @@ bool PinOps::CheckForDAGViolation(Base_InputPin* in_pin, Base_OutputPin* out_pin
         n = n_queue.front();
         n_queue.pop();
         if (n == out_pin->owner) return true;
-        for (size_t p = 0; p < n->GetOutputPinCount(); ++p)
+        for (int p = 0; p < n->GetOutputPinCount(); ++p)
             for (auto & o : n->GetOutputPin(p).output)
                 n_queue.push(o->owner);
     }

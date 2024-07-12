@@ -62,8 +62,8 @@ public:
     void DisconnectAllPins();
 
     // GETTERS
-    size_t GetInputPinCount() const { return input_pins.size(); }
-    size_t GetOutputPinCount() const { return output_pins.size(); }
+    int GetInputPinCount() const { return (int)input_pins.size(); }
+    int GetOutputPinCount() const { return (int)output_pins.size(); }
     const Base_InputPin& GetInputPin(int ind) const { return input_pins[ind]; }
     const Base_OutputPin& GetOutputPin(int ind) const {  return output_pins[ind]; }
 

@@ -200,16 +200,16 @@ std::vector<Boilerplate_Var_Data> SS_Node_Factory::GetMatchingBoilerplateNodes(c
 
 Builtin_GraphNode* SS_Node_Factory::BuildBuiltinNode(Builtin_Node_Data& node_data, int id, ImVec2 pos) {
     auto* n = new Builtin_GraphNode(node_data, id, pos);
-    std::vector<Parameter_Data*> nil;
     n->GenerateIntermediateResultFrameBuffers();
+    // std::vector<Parameter_Data*> nil;
     // n->CompileIntermediateCode(fb, nil);
     return n;
 }
 
 Constant_Node* SS_Node_Factory::BuildConstantNode(Constant_Node_Data& node_data, int id, ImVec2 pos) {
     auto* n = new Constant_Node(node_data, id, pos);
-    std::vector<Parameter_Data*> nil;
     n->GenerateIntermediateResultFrameBuffers();
+    // std::vector<Parameter_Data*> nil;
     // n->CompileIntermediateCode(fb, nil);
     return n;
 }
@@ -221,14 +221,18 @@ Vector_Op_Node* SS_Node_Factory::BuildVecOpNode(Vector_Op_Node_Data& node_data, 
 
 Param_Node* SS_Node_Factory::BuildParamNode(Parameter_Data* param_data, int id, ImVec2 pos) {
     auto* n = new Param_Node(param_data, id, pos);
-    std::vector<Parameter_Data*> nil;
     n->GenerateIntermediateResultFrameBuffers();
     return n;
 }
 
 Boilerplate_Var_Node* SS_Node_Factory::BuildBoilerplateVarNode(Boilerplate_Var_Data& data, SS_Boilerplate_Manager* bm, int id, ImVec2 pos) {
     auto* n = new Boilerplate_Var_Node(data, bm, id, pos);
-    std::vector<Parameter_Data*> nil;
     n->GenerateIntermediateResultFrameBuffers();
     return n;
+}
+
+Terminal_Node * SS_Node_Factory::BuildTerminalNode(const std::vector<Boilerplate_Var_Data> &varData, int id, ImVec2 pos) {
+    auto* tn = new Terminal_Node(varData, id, pos);
+    tn->GenerateIntermediateResultFrameBuffers();
+    return tn;
 }

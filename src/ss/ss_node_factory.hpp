@@ -38,5 +38,8 @@ public:
     static class Vector_Op_Node* BuildVecOpNode(Vector_Op_Node_Data& node_data, int id, ImVec2 pos);
     static class Param_Node* BuildParamNode(Parameter_Data* param_data, int id, ImVec2 pos);
     static class Boilerplate_Var_Node* BuildBoilerplateVarNode(Boilerplate_Var_Data& data, class SS_Boilerplate_Manager* bm, int id, ImVec2 pos);
+
+    static class Terminal_Node* BuildTerminalNode(const std::vector<Boilerplate_Var_Data> &varData, int i, ImVec2 pos);
+
 };
 #endif

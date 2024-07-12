@@ -11,6 +11,8 @@ include_directories(src/graphics)
 include_directories(src/math)
 include_directories(src/ss)
 
+add_compile_definitions(CMAKE_ROOT_DIR="${CMAKE_SOURCE_DIR}/")
+
 file(GLOB_RECURSE MAIN_SOURCES
         "./src/main.cpp"
         "./src/graphics/*.cpp"

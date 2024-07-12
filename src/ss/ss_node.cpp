@@ -210,11 +210,13 @@ void Base_GraphNode::DrawIntermediateResult(unsigned int framebuffer, const std:
 
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, nodes_depth_texture, 0); 
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, nodes_depth_texture, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, nodes_rendered_texture, 0);
     
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cerr << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "Depth texture: " << nodes_depth_texture << ", Render Texture: " << nodes_rendered_texture << std::endl;
+        assert(not "ERROR::FRAMEBUFFER:: Framebuffer is not complete!");
+    }
 
     glEnable(GL_DEPTH_TEST);
     glViewport(0, 0, 256, 256);
