@@ -332,7 +332,7 @@ ImTextureID Base_GraphNode::BindAndGetImageTexture() {
 
 
 bool Base_GraphNode::CanConnectPins(Base_InputPin* in_pin, Base_OutputPin* out_pin) {
-    bool size_equal = in_pin->type.arr_size == out_pin->type.arr_size;
+    bool size_equal = true; // TODO: in_pin->type.arr_size == out_pin->type.arr_size;
     unsigned type_intersect = in_pin->type.type_flags & out_pin->type.type_flags;
 
     bool valid_type = type_intersect & GLSL_TypeMask;

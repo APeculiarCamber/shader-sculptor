@@ -4,7 +4,7 @@
 #include "ss_parser.hpp"
 #include "ss_graph.hpp"
 
-ImVec2 Base_Pin::GetSize(float circle_off, float border) {
+ImVec2 Base_Pin::GetSize(float circle_off, float border) const {
     ImVec2 text_size = ImGui::CalcTextSize(_name.c_str());
     float circle_rad = text_size.y / 2;
     return text_size + ImVec2(circle_rad + circle_off + border * 2, border * 2);

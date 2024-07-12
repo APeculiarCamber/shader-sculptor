@@ -17,7 +17,7 @@ struct Base_Pin {
     bool bInput;
     std::string _name;
 
-    ImVec2 GetSize(float circle_off, float border);
+    ImVec2 GetSize(float circle_off, float border) const;
     virtual void Draw(ImDrawList* drawList, ImVec2 pos, float circle_off, float border) {};
     virtual ImVec2 GetPinPos(float circle_off, float border, float* radius) { return {0, 0}; };
 
@@ -27,7 +27,6 @@ struct Base_Pin {
     virtual ~Base_Pin() = default;
 };
 
-struct Base_InputPin;
 struct Base_OutputPin;
 
 // INPUT PIN CLASS
@@ -54,7 +53,7 @@ namespace PinOps {
     /**
      * Tracks through previously constructed graph to determine if adding an edge from in_pin to out_pin will result in
      * a cycle.
-     * WARNING: This explicitly assumes m_nodes are Base_GraphNode. TODO: this is bad coupling.
+     * WARNING: This explicitly assumes m_nodes are Base_GraphNode.
      * @return True iff adding the edge would NOT result a cycle (i.e. it would maintain DAG).
      */
     bool CheckForDAGViolation(Base_InputPin *in_pin, Base_OutputPin *out_pin);

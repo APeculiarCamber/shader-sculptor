@@ -59,18 +59,20 @@ bool SS_Graph::DeleteNode(int id) {
     if (it->second.get() == _selectedNode) _selectedNode = nullptr;
     if (it->second.get() == _dragNode) { _dragNode = nullptr; _dragPin = nullptr; }
 
-    Base_GraphNode* n = it->second.get();
-    n->DisconnectAllPins();
-    m_nodes.erase(it);
+    auto& delNode = it->second;
+    delNode->DisconnectAllPins();
 
     // If it is a parameter node, we need to remove it from the parameter->node map
-    if (it->second->GetNodeType() == NODE_PARAM) {
+    if (delNode->GetNodeType() == NODE_PARAM) {
         auto* pn = (Param_Node*)it->second.get();
         assert(m_paramIDsToNodeIDs.find(pn->_paramID) != m_paramIDsToNodeIDs.end());
         auto& paramNodesOfID = m_paramIDsToNodeIDs[pn->_paramID];
         assert(std::find(paramNodesOfID.begin(), paramNodesOfID.end(), pn->GetID()) != paramNodesOfID.end());
         paramNodesOfID.erase(std::find(paramNodesOfID.begin(), paramNodesOfID.end(), pn->GetID()));
     }
+
+    m_nodes.erase(it);
+
     return true;
 }
 
@@ -166,6 +168,7 @@ void SS_Graph::HandleInput() {
         if (_dragNode) {
             _dragNode->SetDrawOldPos(_dragNode->GetDrawOldPos() + ImGui::GetMouseDragDelta(0));
         }
+
         _dragNode = nullptr;
         _dragPin = nullptr;
 
@@ -261,7 +264,7 @@ void SS_Graph::HandleInput() {
             hover_node->IsDisplayButtonHoveredOver(m_pos - (m_drawPosOffset + m_dragPosOffset));
     if (display_button_hovered) {
         ImGui::BeginTooltip();
-        ImGui::Text("DISPLAY INTERMEDIATE");
+        ImGui::Text("Display Intermediate");
         ImGui::EndTooltip();
     }
     if (ImGui::IsKeyPressed(ImGuiKey_Delete) && hover_id != -1) {
