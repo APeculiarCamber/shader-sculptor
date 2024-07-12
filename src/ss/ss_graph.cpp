@@ -169,7 +169,7 @@ void SS_Graph::HandleInput() {
         _dragNode = nullptr;
         _dragPin = nullptr;
 
-        // SEARCH BAR, TODO: duplicate code here, refactor to shared function
+        // SEARCH BAR
         ImGui::InputText("Search", m_searchBuffer, 256);
         // CONSTANT
         auto const_node_data_list = SS_Node_Factory::GetMatchingConstantNodes(std::string(m_searchBuffer));
