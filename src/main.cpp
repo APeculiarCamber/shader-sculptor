@@ -1,6 +1,5 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <algorithm>
 #include <vector>
 #include <iostream>
 
@@ -8,7 +7,6 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "ss/ss_graph.hpp"
-#include "graphics/ga_material.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
