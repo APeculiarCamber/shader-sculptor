@@ -10,17 +10,15 @@
 #include "ss/ss_graph.hpp"
 #include "graphics/ga_material.h"
 
-void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
-void ProcessInput(GLFWwindow *window);
-
-// settings
-const unsigned int SCR_WIDTH = 1600;
-const unsigned int SCR_HEIGHT = 1200;
-
-
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include "ss_boilerplate.hpp"
+
+const unsigned int SCR_WIDTH = 1600;
+const unsigned int SCR_HEIGHT = 1200;
+
+void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
+void ProcessInput(GLFWwindow *window);
 
 SS_Graph* DrawGraphTypePrompt() {
     SS_Graph* ret_graph = nullptr;
