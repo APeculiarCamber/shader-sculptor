@@ -1,8 +1,9 @@
-#include <algorithm>
-#include <queue>
 #include "ss_pins.hpp"
 #include "ss_parser.hpp"
 #include "ss_graph.hpp"
+#include <algorithm>
+#include <queue>
+
 
 ImVec2 Base_Pin::GetSize(float circle_off, float border) const {
     ImVec2 text_size = ImGui::CalcTextSize(_name.c_str());
@@ -83,6 +84,9 @@ std::string Base_OutputPin::get_pin_output_name() {
 }
 
 
+/*************************************************************************************************************
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *************************************************************************************************************/
 
 // returns TRUE if DAG violation
 bool PinOps::CheckForDAGViolation(Base_InputPin* in_pin, Base_OutputPin* out_pin) {

@@ -16,26 +16,10 @@ public:
    // -1 for failed
    Base_GraphNode* GetNode(int id);
     bool DeleteNode(int id);
-
     bool DisconnectAllPinsByNodeId(int id);
-
     void InvalidateShaders();
-
     void InformOfDelete(int paramID) override;
-    /*
-    for (int id : param_node_ids) {
-        graphHook->DisconnectAllPinsByNodeId(id);
-        graphHook->update_node_by_id(id, SS_Parser::ConstantTypeToGLSLType(m_gentype, m_type, m_arrSize), m_paramName);
-    }
-    graphHook->InvalidateShaders();
-     */
     void UpdateParamDataContents(int paramID, GLSL_TYPE type) override;
-    /*
-    for (int id : param_node_ids) {
-        graphHook->update_node_by_id(id, SS_Parser::ConstantTypeToGLSLType(m_gentype, m_type, m_arrSize), m_paramName);
-    }
-    graphHook->InvalidateShaders();
-     */
     void UpdateParamDataName(int paramID, const char* name) override;
 
 

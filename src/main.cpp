@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <vector>
 #include <iostream>
+#include <fstream>
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw.h"
@@ -17,6 +18,7 @@ const unsigned int SCR_HEIGHT = 1200;
 
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
 void ProcessInput(GLFWwindow *window);
+void MakeDefaultIMGUIIniFile(const std::string& filename);
 
 SS_Graph* DrawGraphTypePrompt() {
     SS_Graph* ret_graph = nullptr;
@@ -63,6 +65,7 @@ int main()
         return -1;
     }
 
+    MakeDefaultIMGUIIniFile("imgui.ini");
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -118,6 +121,9 @@ int main()
 }
 
 
+
+
+
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 void ProcessInput(GLFWwindow *window)
 {
@@ -129,4 +135,32 @@ void ProcessInput(GLFWwindow *window)
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+}
+
+// Make a IMGUI ini file for the default positions of windows
+void MakeDefaultIMGUIIniFile(const std::string& filename) {
+    if (not std::ifstream(filename).good()) {
+        std::cout << "Made default IMGUI ini" << std::endl;
+        std::ofstream off(filename);
+        off << R"(
+[Window][GRAPH TYPE PROMPT]
+Pos=646,425
+Size=200,200
+Collapsed=0
+
+[Window][Parameters]
+Pos=1228,598
+Size=362,579
+Collapsed=0
+
+[Window][Node Context Panel]
+Pos=902,50
+Size=310,141
+Collapsed=0
+
+[Window][Image Loader]
+Pos=1228,47
+Size=361,534
+Collapsed=0)" << std::endl;
+    }
 }
