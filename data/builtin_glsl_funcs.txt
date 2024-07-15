@@ -12,54 +12,54 @@ out vec4 res = vec4( in vec3 a , 1 ); vec3_to_vec4
 
 out genType res = mix( in genType x , in genType y , in genType a ); mix_gen
 out genType res = mix( in genType x , in genType y , in float a ); mix
-out genDType res = mix( in genDType x , in genDType y , in genDType a ); mix_gen_D
-out genDType res = mix( in genDType x , in genDType y , in double a ); mix_D
-out genDType res = mix( in genDType x , in genDType y , in genBType a ); mix_D_bool
+out genDType res = mix( in genDType x , in genDType y , in genDType a ); mix_gen_Double
+out genDType res = mix( in genDType x , in genDType y , in double a ); mix_Double
+out genDType res = mix( in genDType x , in genDType y , in genBType a ); mix_Double_bool
 out genType res = mix( in genType x , in genType y , in genBType a ); mix_bool
 out bvecn gt = greaterThan ( in vecn x , in vecn y ); greaterThan_(>)
 out GenType res = ( in bool val ? in GenType True : in GenType False ); if_(?) 
 
 out genType step = smoothstep( in genType edge0 , in genType edge1 , in genType x ); smoothstep_gen
 out genType step = smoothstep( in float edge0 , in float edge1 , in genType x ); smoothstep
-out genDType step = smoothstep( in genDType edge0 , in genDType edge1 , in genDType x ); smoothstep_gen_D
-out genDType step = smoothstep( in double edge0 , in double edge1 , in genDType x ); smoothstep_D
+out genDType step = smoothstep( in genDType edge0 , in genDType edge1 , in genDType x ); smoothstep_gen_Double
+out genDType step = smoothstep( in double edge0 , in double edge1 , in genDType x ); smoothstep_Double
 out genType val = step( in genType edge , in genType x ); step_gen
 out genType val = step(	in float edge , in genType x ); step
-genDType val = step( in genDType edge , in genDType x ); step_gen_D
-genDType val = step( in double edge, in genDType x ); step_gen_D
+out genDType val = step( in genDType edge , in genDType x ); step_gen_Double
+out genDType val = step( in double edge, in genDType x ); step_Double
 
 out genType sqrt = sqrt( in genType x ); sqrt
-out genDType sqrt = sqrt( in genDType x ); sqrt_D
+out genDType sqrt = sqrt( in genDType x ); sqrt_Double
 
 out genType res = ceil( in genType x ); ceil
-out genDType res = ceil( in genDType x ); ceil_D
+out genDType res = ceil( in genDType x ); ceil_Double
 
 out genType t = trunc ( in genType x ); trunc
-out genDType t = trunc ( in genDType x ); trunc_D
+out genDType t = trunc ( in genDType x ); trunc_Double
 
 out genType res = round ( in genType x ); round
-out genDType res = round ( in genDType x ); round_D
+out genDType res = round ( in genDType x ); round_Double
 out genType res = roundEven ( in genType x ); roundEven
-out genDType res = roundEven ( in genDType x ); roundEven_D
+out genDType res = roundEven ( in genDType x ); roundEven_Double
 
 out genType max = max ( in genType x , in genType y ); max_gen
 out genType max = max ( in genType x , in float y ); max_F
-out genDType max = max ( in genDType x , in genDType y ); max_gen_D
-out genDType max = max ( in genDType x , in double y ); max_D
+out genDType max = max ( in genDType x , in genDType y ); max_gen_Double
+out genDType max = max ( in genDType x , in double y ); max_Double
 out genIType max = max ( in genIType x , in genIType y ); max_gen_I
 out genIType max = max ( in genIType x , in int y ); max_I
 
 out genType min = min ( in genType x , in genType y ); min_gen
 out genType min = min ( in genType x , in float y ); min_F
-out genDType min = min ( in genDType x , in genDType y ); min_gen_D
-out genDType min = min ( in genDType x , in double y ); min_D
+out genDType min = min ( in genDType x , in genDType y ); min_gen_Double
+out genDType min = min ( in genDType x , in double y ); min_Double
 out genIType min = min ( in genIType x , in genIType y ); min_gen_I
 out genIType min = min ( in genIType x , in int y ); min_I
 
 out genType rem = mod ( in genType x , in float y ); mod_F
 out genType rem = mod ( in genType x , in genType y ); mod_gen
-out genDType rem = mod ( in genDType x , in double y ); mod_D
-out genDType rem = mod ( in genDType x , in genDType y ); mod_gen_D
+out genDType rem = mod ( in genDType x , in double y ); mod_Double
+out genDType rem = mod ( in genDType x , in genDType y ); mod_gen_Double
 
 out vec4 tex = texture ( in sampler2D sampler , in vec2 P , in float bias ); texture_bias
 out vec4 tex = texture ( in sampler3D sampler , in vec3 P , in float bias ); texture_3D_bias
@@ -87,11 +87,11 @@ out genType res = tanh ( in genType angle ); tanh
 
 out genType sign = sign ( in genType x ); sign
 out genIType sign = sign ( in genIType x ); sign_I
-out genDType sign = sign ( in genDType x ); sign_D
+out genDType sign = sign ( in genDType x ); sign_Double
 
 
 out genType norm = normalize ( in genType v ); normalize
-out genDType norm = normalize ( in genDType v ); normalize_D
+out genDType norm = normalize ( in genDType v ); normalize_Double
 
 out float n = noise1 ( in genType x ); noise1
 out vec2 n = noise2 ( in genType x ); noise2
@@ -100,43 +100,43 @@ out vec4 n = noise4 ( in genType x ); noise4
 
 out genType res = clamp ( in genType x , in genType minVal , in genType maxVal ); clamp_FGen
 out genType res = clamp ( in genType x , in float minVal , in float maxVal ); clamp_F
-out genDType res = clamp ( in genDType x , in genDType minVal , in genDType maxVal ); clamp_DGen
-out genDType res = clamp ( in genDType x , in double minVal , in double maxVal ); clamp_D
+out genDType res = clamp ( in genDType x , in genDType minVal , in genDType maxVal ); clamp_DoubleGen
+out genDType res = clamp ( in genDType x , in double minVal , in double maxVal ); clamp_Double
 out genIType res = clamp ( in genIType x , in genIType minVal , in genIType maxVal ); clamp_IGen
 out genIType res = clamp ( in genIType x , in int minVal , in int maxVal ); clamp_I
 
 out float dist = distance ( in genType p0 , in genType p1 ); distance
-out double dist = distance ( in genDType p0 , in genDType p1 ); distance_D
+out double dist = distance ( in genDType p0 , in genDType p1 ); distance_Double
 out float len = length ( in genType x ); length
-out double len = length ( in genDType x ); length_D
+out double len = length ( in genDType x ); length_Double
 
 out genType inv_sqrt = inversesqrt ( in genType x ); inversesqrt
-out genDType inv_sqrt = inversesqrt ( in genDType x ); inversesqrt_D
+out genDType inv_sqrt = inversesqrt ( in genDType x ); inversesqrt_Double
 
 out vec3 res = cross ( in vec3 x , in vec3 y ); cross
-out dvec3 res = cross ( in dvec3 x, in dvec3 y); cross_D
+out dvec3 res = cross ( in dvec3 x, in dvec3 y); cross_Double
 
 out genType ref = reflect ( in genType I , in genType N ); reflect
-out genDType ref = reflect ( in genDType I , in genDType N ); reflect_D
+out genDType ref = reflect ( in genDType I , in genDType N ); reflect_Double
 out genType ref = refract ( in genType I , in genType N , in float eta ); refract_eta
-out genDType ref = refract ( in genDType I , in genDType N , in float eta ); refract_D_eta
+out genDType ref = refract ( in genDType I , in genDType N , in float eta ); refract_Double_eta
 
 out float dot = dot ( in genType x , in genType y ); dot
-out double dot = dot ( in genDType x , in genDType y ); dot_D
+out double dot = dot ( in genDType x , in genDType y ); dot_Double
 
 out genType forw = faceforward ( in genType N , in genType I , in genType Nref ); faceforward
-out genDType forw = faceforward ( in genDType N , in genDType I , in genDType Nref ); faceforward_D
+out genDType forw = faceforward ( in genDType N , in genDType I , in genDType Nref ); faceforward_Double
 
 out genType floor = floor ( in genType x ); floor
-out genDType floor = floor ( in genDType x ); floor_D
+out genDType floor = floor ( in genDType x ); floor_Double
 
 out genType res = fma ( in genType a , in genType b , in genType c ); MAD
-out genDType res = fma ( in genDType a , in genDType b , in genDType c ); MAD_D
+out genDType res = fma ( in genDType a , in genDType b , in genDType c ); MAD_Double
 out genType frac = fract ( in genType x ); fract
-out genDType frac = fract ( in genDType x ); fract_D
+out genDType frac = fract ( in genDType x ); fract_Double
 
 out genType exp = ldexp ( in genType x , in genIType exp ); ldexp_make
-out genDType exp = ldexp ( in genDType x , in genIType exp ); ldexp_make_D
+out genDType exp = ldexp ( in genDType x , in genIType exp ); ldexp_make_Double
 out genType pow = pow ( in genType x , in genType y ); pow
 
 out genType res = abs ( in genType x ); abs
@@ -186,9 +186,9 @@ out bvecn ne = notEqual ( in uvecn x , in uvecn y ); notEqual_U_(!=)
 out bvecn n = not ( in bvecn x ) not_bool
 
 out genBType inf = isinf ( in genType x ); isinf
-out genBType inf = isinf ( in genDType x ); isinf_D
+out genBType inf = isinf ( in genDType x ); isinf_Double
 out genBType inf = isnan ( in genType x ); isnan
-out genBType inf = isnan ( in genDType x ); isnan_D
+out genBType inf = isnan ( in genDType x ); isnan_Double
 
 out genType exp = exp ( in genType x ); exp_e
 out genType exp = exp2 ( in genType x ); exp_2
@@ -206,16 +206,16 @@ out float det = determinant ( in matn m ); determinant
 out double det = determinant ( in dmatn m ); determinant
 
 out matn inv = inverse ( in matn m ); inverse
-out dmatn inv = inverse ( in dmatn m ); inverse_D
+out dmatn inv = inverse ( in dmatn m ); inverse_Double
 
 out matn t = transpose ( in matn m ); transpose
-out dmatn t = transpose ( in dmatn m ); transpose_D
+out dmatn t = transpose ( in dmatn m ); transpose_Double
 
 out matn comp_mat = matrixCompMult ( in matn x , in matn y ); matrixComponentMult
-out dmatn comp_mat = matrixCompMult ( in dmatn x , in dmatn y ); matrixComponentMult_D
+out dmatn comp_mat = matrixCompMult ( in dmatn x , in dmatn y ); matrixComponentMult_Double
 
 out matn op = outerProduct ( in vecn c , in vecn r ); outerProduct
-out dmatn op = outerProduct ( in dvecn c , in dvecn r ); outerProduct_D
+out dmatn op = outerProduct ( in dvecn c , in dvecn r ); outerProduct_Double
 
 
 out genType der = dFdx ( in genType p ); derivative_dx
