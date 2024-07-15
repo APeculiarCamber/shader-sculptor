@@ -463,10 +463,19 @@ void SS_Graph::DrawNodeContextWindow() const {
                     case SS_Vec4: ImGui::InputFloat4("Input Vec4", f_ptr); break;
 
                     case SS_Mat2:
+                        ImGui::InputFloat2("Input Row 1", f_ptr);
+                        ImGui::InputFloat2("Input Row 2", f_ptr + 2); break;
                     case SS_Mat3:
+                        ImGui::InputFloat3("Input Row 1", f_ptr);
+                        ImGui::InputFloat3("Input Row 2", f_ptr + 3);
+                        ImGui::InputFloat3("Input Row 3", f_ptr + 6); break;
                     case SS_Mat4:
+                        ImGui::InputFloat4("Input Row 1", f_ptr);
+                        ImGui::InputFloat4("Input Row 2", f_ptr + 4);
+                        ImGui::InputFloat4("Input Row 3", f_ptr + 8);
+                        ImGui::InputFloat4("Input Row 4", f_ptr + 12); break;
                     case SS_MAT:
-                        ImGui::Text("WARNING:\nMatrix context not yet supported.");
+                        ImGui::Text("WARNING:\nNon-square matrix context not yet supported.");
                         break;
                 }
             }

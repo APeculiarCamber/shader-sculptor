@@ -140,7 +140,6 @@ void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 // Make a IMGUI ini file for the default positions of windows
 void MakeDefaultIMGUIIniFile(const std::string& filename) {
     if (not std::ifstream(filename).good()) {
-        std::cout << "Made default IMGUI ini" << std::endl;
         std::ofstream off(filename);
         off << R"(
 [Window][GRAPH TYPE PROMPT]
@@ -162,5 +161,6 @@ Collapsed=0
 Pos=1228,47
 Size=361,534
 Collapsed=0)" << std::endl;
+        std::cout << "INIT: Made default IMGUI ini file at " << filename << std::endl;
     }
 }
