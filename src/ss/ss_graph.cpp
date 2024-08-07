@@ -51,7 +51,6 @@ Base_GraphNode* SS_Graph::GetNode(int id) {
     return it->second.get();
 }
 
-/* DELETE a node with id from the graph and disconnect all pins attached to it. */
 bool SS_Graph::DeleteNode(int id) {
     auto it = m_nodes.find(id);
     if (it == m_nodes.end()) return false;

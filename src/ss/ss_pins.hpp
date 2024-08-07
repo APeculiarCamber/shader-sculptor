@@ -7,6 +7,7 @@
 #include "ss_node_types.hpp"
 #include "imgui/imgui.h"
 
+// WARNING: coupling to GraphNode
 class Base_GraphNode;
 
 // BASE CLASS FOR NODE PINS

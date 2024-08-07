@@ -20,7 +20,9 @@
 
 #define NODE_TEXTURE_NULL 0xFFFFFFFF
 
-// BASE CLASS FOR ALL GRAPH NODES, HANDLES MOST OF THE DRAWING
+/**
+ * Base class for all graph nodes, handles drawing and display management.
+ */
 class Base_GraphNode {
 public:
     virtual ~Base_GraphNode();
@@ -29,20 +31,18 @@ public:
     void DrawOutputConnects(ImDrawList* drawList, ImVec2 offset);
     bool IsHovering(ImVec2 mouse_pos);
     Base_Pin* GetHoveredPin(ImVec2 mouse_pos);
-    bool IsDisplayButtonHoveredOver(ImVec2 p);
 
-    void ToggleDisplay() { is_display_up = !is_display_up; };
+    // Toggle intermediate display
+    void ToggleDisplay() { m_isDisplayUp = !m_isDisplayUp; };
+    bool IsDisplayButtonHoveredOver(ImVec2 p);
 
     virtual std::string RequestOutput(int out_index) = 0;
     virtual std::string ProcessForCode() = 0;
     void SetShaderCode(const std::string& frag_shad, const std::string& vert_shad);
 
     unsigned int GetMostRestrictiveGentypeInSubgraph(Base_Pin* start_pin);
-    unsigned int GetMostRestrictiveGentypeInSubgraph_Rec(Base_Pin* start_pin, std::unordered_set<int>& processed_ids);
-
-    void PropogateGentypeInSubgraph(Base_Pin* start_pin, unsigned int type);
-    void PropogateGentypeInSubgraph_Rec(Base_Pin* start_pin, unsigned int type, std::unordered_set<int>& processed_ids);
-    void PropogateBuildDirty();
+    void PropagateGentypeInSubgraph(Base_Pin* start_pin, unsigned int type);
+    void PropagateBuildDirty();
 
     virtual NODE_TYPE GetNodeType() { return NODE_DEFAULT; };
 
@@ -53,8 +53,8 @@ public:
     void CompileIntermediateCode(std::unique_ptr<ga_material>&& material);
     void DrawIntermediateResult(unsigned int framebuffer, const std::vector<std::unique_ptr<Parameter_Data>>& params);
 
-    unsigned int GetImageTextureId() const { return nodes_rendered_texture; }
-    virtual bool CanDrawIntermedImage() { return !output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; ; };
+    unsigned int GetImageTextureId() const { return m_nodesRenderedTexture; }
+    virtual bool CanDrawIntermedImage() { return !m_outputPins[0].type.IsMatrix() && m_outputPins[0].type.arr_size == 1; ; };
     ImTextureID BindAndGetImageTexture();
 
     bool CanBeDeleted() { return GetNodeType() != NODE_TERMINAL; };
@@ -62,68 +62,72 @@ public:
     void DisconnectAllPins();
 
     // GETTERS
-    int GetInputPinCount() const { return (int)input_pins.size(); }
-    int GetOutputPinCount() const { return (int)output_pins.size(); }
-    const Base_InputPin& GetInputPin(int ind) const { return input_pins[ind]; }
-    const Base_OutputPin& GetOutputPin(int ind) const {  return output_pins[ind]; }
+    int GetInputPinCount() const { return (int)m_inputPins.size(); }
+    int GetOutputPinCount() const { return (int)m_outputPins.size(); }
+    const Base_InputPin& GetInputPin(int ind) const { return m_inputPins[ind]; }
+    const Base_OutputPin& GetOutputPin(int ind) const {  return m_outputPins[ind]; }
 
-    ImVec2 GetDrawPos() const { return _pos; }
-    ImVec2 GetDrawOldPos() const { return _old_pos; }
-    ImVec2 GetDrawRectSize() const { return rect_size; }
-    ImVec2 GetDrawInputPinRelativePos(int ind) const { return in_pin_rel_pos[ind]; }
-    ImVec2 GetDrawOutputPinRelativePos(int ind) const { return out_pin_rel_pos[ind]; }
-    ImVec2 GetDrawInputPinSize(int ind) const { return in_pin_sizes[ind]; }
-    ImVec2 GetDrawOutputPinSize(int ind) const { return out_pin_sizes[ind]; }
+    ImVec2 GetDrawPos() const { return m_pos; }
+    ImVec2 GetDrawOldPos() const { return m_oldPos; }
+    ImVec2 GetDrawRectSize() const { return m_rectSize; }
+    ImVec2 GetDrawInputPinRelativePos(int ind) const { return m_inPinRelPos[ind]; }
+    ImVec2 GetDrawOutputPinRelativePos(int ind) const { return m_outPinRelPos[ind]; }
+    ImVec2 GetDrawInputPinSize(int ind) const { return m_inPinSizes[ind]; }
+    ImVec2 GetDrawOutputPinSize(int ind) const { return m_outPinSizes[ind]; }
 
-    bool GetHasDisplayUp() const { return is_display_up; }
+    bool GetHasDisplayUp() const { return m_isDisplayUp; }
 
-    int GetID() const { return _id; }
-    const std::string& GetName() const { return _name; }
+    int GetID() const { return m_id; }
+    const std::string& GetName() const { return m_name; }
 
     // SETTERS
     void SetName(const std::string& newName) {
-        _name = newName;
+        m_name = newName;
     }
     void SetDrawOldPos(ImVec2 pos) {
-        _old_pos = _pos = pos;
+        m_oldPos = m_pos = pos;
     }
     void SetDrawPos(ImVec2 pos) {
-        _pos = pos;
+        m_pos = pos;
     }
 
 protected:
-    // MEMBER VARIABLES
-    int _id;
-    ImVec2 _old_pos;
-    ImVec2 _pos;
-    std::unique_ptr<ga_cube_component> _cube = nullptr;
+    unsigned int GetMostRestrictiveGentypeInSubgraph_Rec(Base_Pin* start_pin, std::unordered_set<int>& processed_ids);
+    void PropogateGentypeInSubgraph_Rec(Base_Pin* start_pin, unsigned int type, std::unordered_set<int>& processed_ids);
+
+    int m_id;
+    ImVec2 m_oldPos;
+    ImVec2 m_pos;
+    std::unique_ptr<ga_cube_component> m_cube = nullptr;
 
     // BOUNDS
-    ImVec2 rect_size;
-    std::vector<ImVec2> in_pin_sizes;
-    std::vector<ImVec2> out_pin_sizes;
+    ImVec2 m_rectSize;
+    std::vector<ImVec2> m_inPinSizes;
+    std::vector<ImVec2> m_outPinSizes;
+
     // WARNING : FOR EASE OF USE, THESE ARE RELATIVE TO MOST UPPER LEFT POSITION OF NODE     
-    std::vector<ImVec2> in_pin_rel_pos;
-    std::vector<ImVec2> out_pin_rel_pos;
+    std::vector<ImVec2> m_inPinRelPos;
+    // WARNING : FOR EASE OF USE, THESE ARE RELATIVE TO MOST UPPER LEFT POSITION OF NODE
+    std::vector<ImVec2> m_outPinRelPos;
 
-    unsigned int nodes_rendered_texture { NODE_TEXTURE_NULL };
-    unsigned int nodes_depth_texture { NODE_TEXTURE_NULL };
-    std::string _frag_str { }; // "#version 400\nvoid main() { gl_FragColor = vec4(0.5, 0.0, 1.0, 1.0); }"
-    std::string _vert_str { }; // "#version 400\nlayout(location = 0) in vec3 in_vertex; void main() { gl_Position = vec4(in_vertex, 1.0); }"
+    unsigned int m_nodesRenderedTexture {NODE_TEXTURE_NULL };
+    unsigned int m_nodesDepthTexture {NODE_TEXTURE_NULL };
+    std::string m_fragStr { }; // "#version 400\nvoid main() { gl_FragColor = vec4(0.5, 0.0, 1.0, 1.0); }"
+    std::string m_vertStr { }; // "#version 400\nlayout(location = 0) in vec3 in_vertex; void main() { gl_Position = vec4(in_vertex, 1.0); }"
 
-    ImVec2 display_panel_rel_pos;
-    ImVec2 display_panel_rel_size;
+    ImVec2 m_displayPanelRelPos;
+    ImVec2 m_displayPanelRelSize;
 
-    ImVec2 name_size;
+    ImVec2 m_nameRelSize;
 
-    std::string _name;
+    std::string m_name;
     
-    std::vector<Base_InputPin> input_pins;
-    std::vector<Base_OutputPin> output_pins;
-    int num_input, num_output;
+    std::vector<Base_InputPin> m_inputPins;
+    std::vector<Base_OutputPin> m_outputPins;
+    int m_numInput, m_numOutput;
 
-    bool is_display_up = false;
-    bool is_build_dirty = false;
+    bool m_isDisplayUp = false;
+    bool m_isBuildDirty = false;
 };
 
 
@@ -155,7 +159,7 @@ public:
     Constant_Node(Constant_Node_Data& data, int id, ImVec2 pos);
     NODE_TYPE GetNodeType() override { return NODE_CONSTANT; };
 
-    bool CanDrawIntermedImage() override { return !output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; };
+    bool CanDrawIntermedImage() override { return !m_outputPins[0].type.IsMatrix() && m_outputPins[0].type.arr_size == 1; };
 
     std::string RequestOutput(int out_index) override;
     std::string ProcessForCode() override;
@@ -186,7 +190,7 @@ public:
 
     NODE_TYPE GetNodeType() override { return NODE_PARAM; };
 
-    bool CanDrawIntermedImage() override { return !output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; ; };
+    bool CanDrawIntermedImage() override { return !m_outputPins[0].type.IsMatrix() && m_outputPins[0].type.arr_size == 1; ; };
 
 
     std::string RequestOutput(int out_index) override;
@@ -214,7 +218,7 @@ class SS_Boilerplate_Manager;
 class Boilerplate_Var_Node : public Base_GraphNode {
 public:
     Boilerplate_Var_Node(Boilerplate_Var_Data data, SS_Boilerplate_Manager* bp, int id, ImVec2 pos);
-    bool CanDrawIntermedImage() override { return not output_pins[0].type.IsMatrix() && output_pins[0].type.arr_size == 1; };
+    bool CanDrawIntermedImage() override { return not m_outputPins[0].type.IsMatrix() && m_outputPins[0].type.arr_size == 1; };
 
 
     bool frag_node;

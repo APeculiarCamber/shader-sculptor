@@ -44,18 +44,6 @@ enum GRAPH_PARAM_GENTYPE : unsigned int {
 };
 
 /**
- * Vector Make and Break operations, for use with Nodes
- */
-enum VECTOR_OPS : unsigned int {
-    VEC_BREAK2_OP,
-    VEC_BREAK3_OP,
-    VEC_BREAK4_OP,
-    VEC_MAKE2_OP,
-    VEC_MAKE3_OP,
-    VEC_MAKE4_OP
-};
-
-/**
  * Type-mask for both type and gentype of a variable or output (or input)
  * Also specifies if array and if OUT-var. Not used in current build.
  */

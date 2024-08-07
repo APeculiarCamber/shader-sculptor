@@ -25,5 +25,38 @@ namespace SS_Parser {
 
     // Convert all uppercase letters in string to equivalent lowercase letters
     std::string StringToLower(const std::string& str);
-};
+}
+
+
+/*
+
+ OLD NOTES:
+ Scalars
+The basic non-vector types are:
+bool: conditional type, values may be either true or false
+int: a signed, two's complement, 32-bit integer
+uint: an unsigned 32-bit integer
+float: an IEEE-754 single-precision floating point number
+double: an IEEE-754 double-precision floating-point number
+
+Each of the scalar types, including booleans, have 2, 3, and 4-component vector equivalents. The n digit below can be 2, 3, or 4:
+bvecn: a vector of booleans
+ivecn: a vector of signed integers
+uvecn: a vector of unsigned integers
+ vecn: a vector of single-precision floating-point numbers
+dvecn: a vector of double-precision floating-point numbers
+
+Matrices
+matnxm: A matrix with n columns and m rows. OpenGL uses column-major matrices, which is standard for mathematics users. Example: mat3x4.
+matn: A matrix with n columns and n rows. Shorthand for matnxn
+
+Arrays : end of var?
+
+Samplers:, special as parameters?
+gsampler1D	GL_TEXTURE_1D	1D texture
+gsampler2D	GL_TEXTURE_2D	2D texture
+gsampler3D	GL_TEXTURE_3D	3D texture
+gsamplerCube	GL_TEXTURE_CUBE_MAP	Cubemap Texture
+*/
+
 #endif

@@ -12,16 +12,25 @@ class SS_Graph : public ParamDataGraphHook {
 public:
     explicit SS_Graph(SS_Boilerplate_Manager* bp);
     ~SS_Graph() override;
-   // 0 for input change needed, 1 for no, 2 for output changed needed
+
+    // Get node
+       // 0 for input change needed, 1 for no, 2 for output changed needed
    // -1 for failed
-   Base_GraphNode* GetNode(int id);
+Base_GraphNode* GetNode(int id);
+    // DELETE a node with id from the graph and disconnect all pins attached to it.
     bool DeleteNode(int id);
+    // Disconnect all pins from a node
     bool DisconnectAllPinsByNodeId(int id);
+    // Invalidate the final shaders
     void InvalidateShaders();
+
+    // ParamDataGraphHook OVERRIDES
     void InformOfDelete(int paramID) override;
     void UpdateParamDataContents(int paramID, GLSL_TYPE type) override;
     void UpdateParamDataName(int paramID, const char* name) override;
 
+
+    // IMGUI methods
 
     void HandleInput();
     void Draw();
@@ -37,22 +46,20 @@ public:
     /************************************************
      * *********************CONSTRUCTION **************************/
 
+    // Construct a topological order from the root of a DAG
     [[nodiscard]] static std::vector<Base_GraphNode*> ConstructTopologicalOrder(Base_GraphNode* root);
-    // construct shader code from the terminal fragment node outward
-    //void Construct_Text_For_Frag(Base_GraphNode* root);
-    // construct shader code from the terminal vertex node outward
-    //void Construct_Text_For_Vert(Base_GraphNode* root);
-    void GenerateShaderTextAndPropagate();
-    void SetIntermediateCodeForNode(std::string intermedCode, Base_GraphNode* node);
 
+    // Main generation function for both intermediate code and final code, from connected graph
+    void GenerateShaderTextAndPropagate();
+    // Set the intermediate display code for a node
+    void SetIntermediateCodeForNode(std::string intermedCode, Base_GraphNode* node);
     // Add a uniform parameter (or sampled image) to the declaration of the shaders, allowing use of a new uniform node
     void AddParameter();
 
+
     void SetFinalShaderTextByConstructOrders(const std::vector<Base_GraphNode *> &vertOrder,
                                              const std::vector<Base_GraphNode *> &fragOrder);
-
     void PropagateIntermediateVertexCodeToNodes(const std::vector<Base_GraphNode *> &vertOrder);
-
     void PropagateIntermediateFragmentCodeToNodes(const std::vector<Base_GraphNode *> &fragOrder);
 
 protected:
@@ -83,11 +90,9 @@ protected:
     std::string m_currentFragCode;
     std::string m_currentVertCode;
 
-    //
     Base_GraphNode* _dragNode = nullptr;
     Base_GraphNode* _selectedNode = nullptr;
     Base_Pin* _dragPin;
-
 };
 
 #endif

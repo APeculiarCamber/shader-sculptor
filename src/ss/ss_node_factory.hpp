@@ -11,11 +11,6 @@
 
 // STATIC SINGLETON CLASS
 class SS_Node_Factory {
-protected:
-    static bool bNodeDataInitialized;
-    static bool bBoilerplateInitialized;
-    static std::vector<Builtin_Node_Data> nodeDatas;
-    static std::vector<Boilerplate_Var_Data> boilerplateVarDatas;
 public:
     SS_Node_Factory() = delete;
     SS_Node_Factory(const SS_Node_Factory&) = delete;
@@ -40,6 +35,11 @@ public:
     static class Boilerplate_Var_Node* BuildBoilerplateVarNode(Boilerplate_Var_Data& data, class SS_Boilerplate_Manager* bm, int id, ImVec2 pos);
 
     static class Terminal_Node* BuildTerminalNode(const std::vector<Boilerplate_Var_Data> &varData, int i, ImVec2 pos);
+protected:
+    static bool bNodeDataInitialized;
+    static bool bBoilerplateInitialized;
+    static std::vector<Builtin_Node_Data> nodeDatas;
+    static std::vector<Boilerplate_Var_Data> boilerplateVarDatas;
 
 };
 #endif

@@ -41,15 +41,15 @@ void Base_InputPin::DisconnectAllFrom(bool reprop) {
             // INPUT PIN PROPOGATION
             if (in_pin->type.type_flags & GLSL_GenType) {
                 unsigned int new_in_type = in_pin->owner->GetMostRestrictiveGentypeInSubgraph(in_pin);
-                in_pin->owner->PropogateGentypeInSubgraph(in_pin, new_in_type);
+                in_pin->owner->PropagateGentypeInSubgraph(in_pin, new_in_type);
             }
             // OUTPUT PIN PROPOGATION
             if (out_pin->type.type_flags & GLSL_GenType) {
                 unsigned int new_out_type = out_pin->owner->GetMostRestrictiveGentypeInSubgraph(out_pin);
-                out_pin->owner->PropogateGentypeInSubgraph(out_pin, new_out_type);
+                out_pin->owner->PropagateGentypeInSubgraph(out_pin, new_out_type);
             }
         }
-        in_pin->owner->PropogateBuildDirty();
+        in_pin->owner->PropagateBuildDirty();
     }
 }
 
@@ -120,9 +120,9 @@ bool PinOps::ConnectPins(Base_InputPin* in_pin, Base_OutputPin* out_pin) {
         DisconnectPins(in_pin, in_pin->input, true);
 
     GLSL_TYPE intersect_type = in_pin->type.IntersectCopy(out_pin->type);
-    in_pin->owner->PropogateGentypeInSubgraph(in_pin, intersect_type.type_flags & GLSL_LenMask);
-    out_pin->owner->PropogateGentypeInSubgraph(out_pin, intersect_type.type_flags & GLSL_LenMask);
-    in_pin->owner->PropogateBuildDirty();
+    in_pin->owner->PropagateGentypeInSubgraph(in_pin, intersect_type.type_flags & GLSL_LenMask);
+    out_pin->owner->PropagateGentypeInSubgraph(out_pin, intersect_type.type_flags & GLSL_LenMask);
+    in_pin->owner->PropagateBuildDirty();
 
     in_pin->input = out_pin;
     out_pin->output.push_back(in_pin);
@@ -142,14 +142,14 @@ bool PinOps::DisconnectPins(Base_InputPin* in_pin, Base_OutputPin* out_pin, bool
         // INPUT PIN PROPOGATION
         if (in_pin->type.type_flags & GLSL_GenType) {
             unsigned int new_in_type = in_pin->owner->GetMostRestrictiveGentypeInSubgraph(in_pin);
-            in_pin->owner->PropogateGentypeInSubgraph(in_pin, new_in_type);
+            in_pin->owner->PropagateGentypeInSubgraph(in_pin, new_in_type);
         }
         // OUTPUT PIN PROPOGATION
         if (out_pin->type.type_flags & GLSL_GenType) {
             unsigned int new_out_type = out_pin->owner->GetMostRestrictiveGentypeInSubgraph(out_pin);
-            out_pin->owner->PropogateGentypeInSubgraph(out_pin, new_out_type);
+            out_pin->owner->PropagateGentypeInSubgraph(out_pin, new_out_type);
         }
     }
-    in_pin->owner->PropogateBuildDirty();
+    in_pin->owner->PropagateBuildDirty();
     return true;
 }
